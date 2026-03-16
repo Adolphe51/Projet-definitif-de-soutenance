@@ -1,0 +1,102 @@
+/* ===============================================
+   CYBERGUARD — Feuille de style complète
+   =============================================== */
+
+/* Import de Tailwind et Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+/* Tailwind base */
+@tailwind base;
+
+/* Tailwind composants */
+@tailwind components;
+
+/* Tailwind utilitaires */
+@tailwind utilities;
+
+/* ===============================================
+   Styles personnalisés
+   =============================================== */
+
+body {
+    font-family: 'Nunito', sans-serif;
+    background-color: #f3f4f6; /* gris clair */
+    color: #111827; /* gris foncé pour le texte */
+}
+
+/* Boutons */
+button {
+    @apply px-4 py-2 rounded text-white font-semibold transition-all duration-200;
+}
+
+button.bg-blue {
+    @apply bg-blue-600 hover:bg-blue-700;
+}
+
+button.bg-green {
+    @apply bg-green-600 hover:bg-green-700;
+}
+
+button.bg-red {
+    @apply bg-red-600 hover:bg-red-700;
+}
+
+/* Champs de formulaire */
+input, select, textarea {
+    @apply border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+/* Containers */
+.container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Alertes */
+.alert {
+    @apply px-4 py-3 rounded relative mb-4;
+}
+
+.alert-success {
+    @apply bg-green-100 border border-green-400 text-green-700;
+}
+
+.alert-error {
+    @apply bg-red-100 border border-red-400 text-red-700;
+}
+
+/* Tableaux */
+table {
+    @apply w-full border-collapse border border-gray-200;
+}
+
+th, td {
+    @apply border border-gray-200 px-4 py-2 text-left;
+}
+
+/* Navigation */
+.navbar {
+    @apply bg-white shadow px-4 py-3 flex justify-between items-center;
+}
+
+.navbar a {
+    @apply text-gray-700 hover:text-gray-900 px-3 py-2;
+}
+
+/* Footer */
+footer {
+    @apply text-center py-6 text-gray-500 text-sm;
+}
+
+/* Scrollbar personnalisé */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #9ca3af;
+    border-radius: 4px;
+}
