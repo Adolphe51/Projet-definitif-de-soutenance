@@ -1,0 +1,61 @@
+@startuml
+autonumber
+actor "Système surveillé" as System
+participant "Collecteur de logs" as Collector
+participant "Serveur SIEM" as SIEM
+participant "Analyseur" as Analyzer
+participant "Moteur de corrélation" as Correlator
+participant "Module d’alerte" as Alert
+participant "Base de données" as DB
+participant "Tableau de bord" as Dashboard
+actor "Analyste sécurité" as Analyst
+
+' ==============================
+' ENVOI DES LOGS
+' ==============================
+System -> Collector : Génération des logs
+Collector -> Collector : Normalisation des logs
+Collector -> SIEM : Envoi des logs
+
+' ==============================
+' STOCKAGE
+' ==============================
+SIEM -> DB : Stocker logs
+
+' ==============================
+' ANALYSE
+' ==============================
+SIEM -> Analyzer : Transmettre logs
+Analyzer -> Analyzer : Analyse (pattern, règles)
+Analyzer -> Correlator : Corrélation événements
+
+' ==============================
+' DETECTION
+' ==============================
+Correlator -> Correlator : Détection anomalie
+
+alt Anomalie détectée
+    Correlator -> Alert : Générer alerte
+    
+    ' Enregistrement
+    Alert -> DB : Sauvegarder alerte
+    
+    ' Notification
+    Alert -> Analyst : Notification (email / dashboard)
+    
+    ' Affichage
+    Alert -> Dashboard : Envoyer données alerte
+    
+else Aucun incident
+    Correlator -> SIEM : Continuer surveillance
+end
+
+' ==============================
+' CONSULTATION
+' ==============================
+Analyst -> Dashboard : Consulter alertes
+Dashboard -> DB : Récupérer données
+DB -> Dashboard : Retour des données
+Dashboard -> Analyst : Affichage
+
+@enduml

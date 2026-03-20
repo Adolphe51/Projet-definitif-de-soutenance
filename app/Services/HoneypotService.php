@@ -90,19 +90,17 @@ class HoneypotService
 
         $interaction = HoneypotInteraction::create([
             'honeypot_trap_id' => $trapId,
-            'ip_address' => $ip,
+            'source_ip' => $ip,
             'country' => 'Unknown',
             'payload' => 'Suspicious request detected',
-            'severity' => rand(1, 5),
+            'risk_score' => rand(1, 5),
             'created_at' => now()->subMinutes(rand(1, 1440)),
         ]);
 
         // Crée aussi une alerte associée
         Alert::create([
             'title' => 'Intrusion détectée',
-            'message' => "Tentative d'accès depuis $ip",
-            'severity' => $interaction->severity,
-            'status' => 'new',
+            'message' => "Tentative d'accès depuis $ip"
         ]);
     }
 

@@ -1,0 +1,56 @@
+@startuml
+autonumber
+actor "Utilisateur" as User
+participant "Interface Web" as UI
+participant "API Backend" as API
+participant "Service Auth" as Auth
+participant "Base de données" as DB
+participant "Service Audit" as Audit
+participant "Service Notification" as Notif
+
+' ==============================
+' DEMANDE DE CONNEXION
+' ==============================
+User -> UI : Saisir email + mot de passe
+UI -> API : POST /login
+
+API -> Auth : Vérifier identifiants
+Auth -> DB : Rechercher utilisateur
+DB --> Auth : Données utilisateur
+
+alt Identifiants invalides
+    Auth -> Audit : Log échec connexion
+    Auth --> API : Erreur authentification
+    API --> UI : Message erreur
+    UI --> User : Accès refusé
+else Identifiants valides
+    Auth -> Auth : Générer code 2FA
+    Auth -> DB : Sauvegarder code (hash)
+    Auth -> Notif : Envoyer code (email/SMS)
+
+    API --> UI : Demande code 2FA
+    UI --> User : Saisir code
+
+    User -> UI : Entrer code 2FA
+    UI -> API : POST /verify-2fa
+
+    API -> Auth : Vérifier code
+    Auth -> DB : Comparer code
+
+    alt Code invalide
+        Auth -> Audit : Log échec 2FA
+        Auth --> API : Refus
+        API --> UI : Erreur
+    else Code valide
+        Auth -> Auth : Générer tokens (JWT)
+        Auth -> DB : Créer session
+
+        Auth -> Audit : Log succès connexion
+
+        Auth --> API : Token accès + refresh
+        API --> UI : Auth réussie
+        UI --> User : Accès accordé
+    end
+end
+
+@enduml

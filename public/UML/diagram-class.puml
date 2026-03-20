@@ -1,0 +1,154 @@
+@startuml
+title Diagramme de classes - SIEM sécurisé
+
+' =========================
+' UTILISATEUR & AUTH
+' =========================
+
+class Utilisateur {
+  +id : int
+  +uuid : string
+  +nom : string
+  +email : string
+  +motDePasse : string
+  +isActive : boolean
+  +otpSecret : string
+  +createdAt : datetime
+}
+
+class Session {
+  +id : int
+  +userId : int
+  +ipAddress : string
+  +userAgent : string
+  +expiresAt : datetime
+  +isRevoked : boolean
+}
+
+class Role {
+  +id : int
+  +nom : string
+  +description : string
+}
+
+class Permission {
+  +id : int
+  +nom : string
+  +description : string
+}
+
+class UserRole {
+  +userId : int
+  +roleId : int
+}
+
+class RolePermission {
+  +roleId : int
+  +permissionId : int
+}
+
+' =========================
+' AUDIT
+' =========================
+
+class AuditLog {
+  +id : int
+  +actorId : int
+  +action : string
+  +entityType : string
+  +entityId : int
+  +oldValues : json
+  +newValues : json
+  +ipAddress : string
+  +createdAt : datetime
+}
+
+' =========================
+' COLLECTE DES LOGS
+' =========================
+
+class Source {
+  +id : int
+  +nom : string
+  +type : string
+  +ip : string
+}
+
+class Log {
+  +id : int
+  +sourceId : int
+  +niveau : string
+  +message : text
+  +timestamp : datetime
+}
+
+class Collecteur {
+  +id : int
+  +nom : string
+  +status : string
+}
+
+' =========================
+' ANALYSE
+' =========================
+
+class RegleDetection {
+  +id : int
+  +nom : string
+  +condition : text
+  +niveauGravite : string
+}
+
+class EvenementSecurite {
+  +id : int
+  +logId : int
+  +ruleId : int
+  +type : string
+  +score : int
+  +createdAt : datetime
+}
+
+' =========================
+' ALERTES
+' =========================
+
+class Alerte {
+  +id : int
+  +eventId : int
+  +niveau : string
+  +message : string
+  +status : string
+  +createdAt : datetime
+}
+
+class Notification {
+  +id : int
+  +alerteId : int
+  +canal : string
+  +destinataire : string
+  +envoyeLe : datetime
+}
+
+' =========================
+' RELATIONS
+' =========================
+
+Utilisateur "1" -- "0..*" Session
+Utilisateur "1" -- "0..*" UserRole
+Role "1" -- "0..*" UserRole
+
+Role "1" -- "0..*" RolePermission
+Permission "1" -- "0..*" RolePermission
+
+Utilisateur "1" -- "0..*" AuditLog
+
+Source "1" -- "0..*" Log
+Collecteur "1" -- "0..*" Log
+
+Log "1" -- "0..*" EvenementSecurite
+RegleDetection "1" -- "0..*" EvenementSecurite
+
+EvenementSecurite "1" -- "0..*" Alerte
+Alerte "1" -- "0..*" Notification
+
+@enduml

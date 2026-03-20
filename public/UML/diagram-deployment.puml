@@ -1,0 +1,63 @@
+@startuml
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+node "Machine Attaquante\n(Kali Linux)" as Attacker {
+    component "Outils d’attaque\n(Nmap, Metasploit)"
+}
+
+node "Système Cible\n(Ubuntu Server)" as Target {
+    component "Serveur Web\n(Apache/Nginx)"
+    component "Agent de logs\n(Filebeat / Wazuh Agent)"
+}
+
+node "Collecteur de Logs\n(Log Server)" as Collector {
+    component "Logstash"
+    component "Wazuh Manager"
+}
+
+node "Serveur SIEM\n(Analyse & Corrélation)" as SIEM {
+    component "Elasticsearch"
+    component "Moteur de corrélation"
+    component "Règles de détection"
+}
+
+node "Serveur Application\n(API + Auth)" as App {
+    component "Backend (Laravel)"
+    component "Service Auth (JWT + 2FA)"
+    component "RBAC / ABAC Engine"
+    component "Service Audit"
+}
+
+node "Base de Données" as DB {
+    component "MySQL / PostgreSQL"
+}
+
+node "Interface Utilisateur\n(Navigateur Web)" as Client {
+    component "Dashboard Web"
+}
+
+node "Administrateur / Analyste" as User
+
+' ==============================
+' COMMUNICATIONS
+' ==============================
+
+Attacker --> Target : Attaques simulées
+
+Target --> Collector : Envoi des logs
+Collector --> SIEM : Transmission logs
+
+SIEM --> DB : Stockage événements
+SIEM --> App : Envoi alertes
+
+App --> DB : Données (users, audit, sessions)
+
+Client --> App : Requêtes HTTP (API)
+App --> Client : Réponses (JSON/UI)
+
+User --> Client : Interaction
+
+SIEM --> Client : Visualisation (via API)
+
+@enduml

@@ -1,0 +1,118 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Administrateur" as Admin
+actor "Analyste Sécurité" as Analyst
+actor "Système surveillé" as System
+actor "Attaquant simulé" as Attacker
+
+rectangle "Système de détection et d’analyse de sécurité" {
+
+    ' ======================
+    ' AUTHENTIFICATION
+    ' ======================
+    usecase "Se connecter" as UC_Login
+    usecase "Se déconnecter" as UC_Logout
+    usecase "Gérer sessions" as UC_Session
+    usecase "Vérifier identité (2FA)" as UC_2FA
+
+    ' ======================
+    ' GESTION UTILISATEURS
+    ' ======================
+    usecase "Créer utilisateur" as UC_CreateUser
+    usecase "Modifier utilisateur" as UC_UpdateUser
+    usecase "Supprimer utilisateur" as UC_DeleteUser
+    usecase "Attribuer rôle" as UC_AssignRole
+
+    ' ======================
+    ' COLLECTE DES LOGS
+    ' ======================
+    usecase "Envoyer logs" as UC_SendLogs
+    usecase "Collecter logs" as UC_CollectLogs
+    usecase "Centraliser logs" as UC_CentralizeLogs
+
+    ' ======================
+    ' ANALYSE & DETECTION
+    ' ======================
+    usecase "Analyser événements" as UC_Analyze
+    usecase "Détecter anomalies" as UC_Detect
+    usecase "Corréler événements" as UC_Correlate
+    usecase "Réduire faux positifs" as UC_FalsePositive
+
+    ' ======================
+    ' ALERTES
+    ' ======================
+    usecase "Générer alerte" as UC_GenerateAlert
+    usecase "Envoyer notification" as UC_Notify
+    usecase "Consulter alertes" as UC_ViewAlerts
+
+    ' ======================
+    ' SUPERVISION
+    ' ======================
+    usecase "Visualiser tableau de bord" as UC_Dashboard
+    usecase "Filtrer événements" as UC_Filter
+    usecase "Rechercher logs" as UC_Search
+
+    ' ======================
+    ' AUDIT & TRAÇABILITÉ
+    ' ======================
+    usecase "Enregistrer actions (audit)" as UC_Audit
+    usecase "Consulter journaux d’audit" as UC_ViewAudit
+
+    ' ======================
+    ' TESTS & ATTAQUES
+    ' ======================
+    usecase "Simuler attaque" as UC_Attack
+}
+
+' ======================
+' RELATIONS ACTEURS
+' ======================
+
+Admin --> UC_Login
+Admin --> UC_Logout
+Admin --> UC_CreateUser
+Admin --> UC_UpdateUser
+Admin --> UC_DeleteUser
+Admin --> UC_AssignRole
+Admin --> UC_Dashboard
+Admin --> UC_ViewAudit
+
+Analyst --> UC_Login
+Analyst --> UC_Logout
+Analyst --> UC_ViewAlerts
+Analyst --> UC_Dashboard
+Analyst --> UC_Search
+Analyst --> UC_Filter
+
+System --> UC_SendLogs
+Attacker --> UC_Attack
+
+' ======================
+' RELATIONS INTERNES
+' ======================
+
+UC_Login --> UC_2FA : <<include>>
+UC_Login --> UC_Session : <<include>>
+
+UC_SendLogs --> UC_CollectLogs : <<include>>
+UC_CollectLogs --> UC_CentralizeLogs : <<include>>
+
+UC_CentralizeLogs --> UC_Analyze : <<include>>
+UC_Analyze --> UC_Detect : <<include>>
+UC_Analyze --> UC_Correlate : <<include>>
+UC_Analyze --> UC_FalsePositive : <<include>>
+
+UC_Detect --> UC_GenerateAlert : <<include>>
+UC_GenerateAlert --> UC_Notify : <<include>>
+
+UC_Dashboard --> UC_Filter : <<include>>
+UC_Dashboard --> UC_Search : <<include>>
+
+UC_Login --> UC_Audit : <<include>>
+UC_CreateUser --> UC_Audit : <<include>>
+UC_UpdateUser --> UC_Audit : <<include>>
+UC_DeleteUser --> UC_Audit : <<include>>
+
+@enduml

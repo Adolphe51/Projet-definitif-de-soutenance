@@ -1,0 +1,87 @@
+@startuml
+autonumber
+actor "Utilisateur" as User
+participant "Interface Web" as UI
+participant "API Backend" as API
+participant "Service Auth" as Auth
+participant "Moteur RBAC" as RBAC
+participant "Moteur ABAC" as ABAC
+participant "Service Politique" as Policy
+participant "Base de données" as DB
+participant "Service Audit" as Audit
+
+' ==============================
+' DEMANDE D’ACCÈS À UNE RESSOURCE
+' ==============================
+User -> UI : Accéder à ressource (ex: /alerts)
+UI -> API : GET /alerts
+
+' ==============================
+' AUTHENTIFICATION
+' ==============================
+API -> Auth : Vérifier token JWT
+Auth -> DB : Vérifier session
+DB --> Auth : Session valide
+
+alt Token invalide
+    Auth -> Audit : Log accès refusé
+    Auth --> API : Unauthorized
+    API --> UI : Accès refusé
+    UI --> User : Refus
+else Token valide
+
+    ' ==============================
+    ' RBAC (ROLE BASED)
+    ' ==============================
+    API -> RBAC : Vérifier rôle utilisateur
+    RBAC -> DB : Récupérer rôle
+    DB --> RBAC : Role = ANALYSTE
+
+    RBAC -> RBAC : Vérifier permission
+
+    alt Rôle non autorisé
+        RBAC -> Audit : Log refus RBAC
+        RBAC --> API : Access Denied
+        API --> UI : Refus
+    else Rôle autorisé
+
+        ' ==============================
+        ' ABAC (ATTRIBUTE BASED)
+        ' ==============================
+        API -> ABAC : Vérifier attributs
+
+        ABAC -> DB : Récupérer attributs utilisateur
+        DB --> ABAC : département, niveau, etc.
+
+        ABAC -> Policy : Charger règles
+        Policy --> ABAC : Règles sécurité
+
+        ABAC -> ABAC : Évaluer :
+        note right
+          - Heure (TBAC)
+          - Adresse IP
+          - Localisation
+          - Sensibilité ressource
+        end note
+
+        alt Accès refusé (ABAC)
+            ABAC -> Audit : Log refus ABAC
+            ABAC --> API : Denied
+            API --> UI : Refus
+        else Accès autorisé
+
+            ' ==============================
+            ' ACCÈS ACCORDÉ
+            ' ==============================
+            API -> DB : Récupérer données
+            DB --> API : Résultat
+
+            API -> Audit : Log accès autorisé
+
+            API --> UI : Données
+            UI --> User : Affichage
+        end
+    end
+end
+
+@enduml
