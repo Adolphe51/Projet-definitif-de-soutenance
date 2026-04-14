@@ -7,9 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 class HoneypotTrap extends Model
 {
     protected $fillable = [
-        'name', 'type', 'fake_service', 'port', 'path', 'status',
-        'description', 'lure_content', 'interactions_count',
-        'last_triggered_at', 'config',
+        'name',
+        'type',
+        'fake_service',
+        'port',
+        'path',
+        'status',
+        'description',
+        'lure_content',
+        'interactions_count',
+        'last_triggered_at',
+        'config',
     ];
 
     protected $casts = [
@@ -17,41 +25,26 @@ class HoneypotTrap extends Model
         'last_triggered_at' => 'datetime',
     ];
 
+    // Types de pièges disponibles
     public static function trapTypes(): array
     {
         return [
-            'fake_login'    => 'Faux Portail de Connexion',
-            'fake_admin'    => 'Faux Panel Admin',
-            'fake_db'       => 'Fausse Base de Données',
-            'fake_api'      => 'Fausse API REST',
-            'fake_ssh'      => 'Faux Serveur SSH',
-            'fake_ftp'      => 'Faux Serveur FTP',
+            'fake_login'      => 'Faux Portail de Connexion',
+            'fake_admin'      => 'Faux Panel Admin',
+            'fake_db'         => 'Fausse Base de Données',
+            'fake_api'        => 'Fausse API REST',
+            'fake_ssh'        => 'Faux Serveur SSH',
+            'fake_ftp'        => 'Faux Serveur FTP',
             'fake_phpmyadmin' => 'Faux phpMyAdmin',
-            'fake_wordpress' => 'Faux WordPress Admin',
-            'canary_token'  => 'Token Canary (Piège URL)',
-            'fake_document' => 'Faux Document Sensible',
+            'fake_wordpress'  => 'Faux WordPress Admin',
+            'canary_token'    => 'Token Canary (Piège URL)',
+            'fake_document'   => 'Faux Document Sensible',
         ];
     }
-}
 
-class HoneypotInteraction extends Model
-{
-    protected $fillable = [
-        'honeypot_trap_id', 'source_ip', 'country', 'city',
-        'latitude', 'longitude', 'isp', 'method', 'path',
-        'user_agent', 'payload', 'credentials_attempted',
-        'session_duration', 'actions_taken', 'risk_score',
-    ];
-
-    protected $casts = [
-        'actions_taken'         => 'array',
-        'credentials_attempted' => 'array',
-        'latitude'              => 'float',
-        'longitude'             => 'float',
-    ];
-
-    public function trap()
+    // Relation avec les interactions
+    public function interactions()
     {
-        return $this->belongsTo(HoneypotTrap::class);
+        return $this->hasMany(HoneypotInteraction::class);
     }
 }

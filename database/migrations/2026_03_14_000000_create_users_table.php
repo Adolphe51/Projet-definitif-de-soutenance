@@ -4,18 +4,18 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->uuid('uuid')
+                ->unique();
+            $table->string('nom');
+            $table->string('email')->unique()->nullable();
             $table->string('password');
-            $table->string('role')->default('user'); // admin ou user
-            $table->string('face_image')->nullable(); // chemin ou URL de la photo
+            $table->boolean('is_active')
+                ->default(true);
             $table->rememberToken();
             $table->timestamps();
         });

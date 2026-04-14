@@ -9,41 +9,39 @@ class Utilisateur {
   +id : int
   +uuid : string
   +nom : string
-  +email : string
-  +motDePasse : string
+  +email : string(unique)
+  +motDePasse : string(hashed)
   +isActive : boolean
   +otpSecret : string
   +createdAt : datetime
 }
 
-class Session {
+class SecuritySession {
   +id : int
   +userId : int
+  +accessTokenHash : string(unique)
+  +refreshTokenHash : string(unique)
   +ipAddress : string
   +userAgent : string
+  +deviceFingerprint : string
   +expiresAt : datetime
   +isRevoked : boolean
-}
-
-class Role {
-  +id : int
-  +nom : string
-  +description : string
 }
 
 class Permission {
   +id : int
   +nom : string
   +description : string
+  +ressourceType : string
 }
 
 class UserRole {
   +userId : int
-  +roleId : int
+  +role : string
 }
 
 class RolePermission {
-  +roleId : int
+  +role : string
   +permissionId : int
 }
 
@@ -135,9 +133,7 @@ class Notification {
 
 Utilisateur "1" -- "0..*" Session
 Utilisateur "1" -- "0..*" UserRole
-Role "1" -- "0..*" UserRole
 
-Role "1" -- "0..*" RolePermission
 Permission "1" -- "0..*" RolePermission
 
 Utilisateur "1" -- "0..*" AuditLog

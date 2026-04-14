@@ -1,102 +1,156 @@
-/* ===============================================
-   CYBERGUARD — Feuille de style complète
-   =============================================== */
-
-/* Import de Tailwind et Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-
-/* Tailwind base */
-@tailwind base;
-
-/* Tailwind composants */
-@tailwind components;
-
-/* Tailwind utilitaires */
-@tailwind utilities;
-
-/* ===============================================
-   Styles personnalisés
-   =============================================== */
-
-body {
-    font-family: 'Nunito', sans-serif;
-    background-color: #f3f4f6; /* gris clair */
-    color: #111827; /* gris foncé pour le texte */
+/* CSS Variables - Essential only */
+:root {
+    --primary: #2563eb;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: rgba(148, 163, 184, 0.4);
+    --gap: 1rem;
+    --radius: 12px;
+    --font: 'Segoe UI', Roboto, Arial, sans-serif;
 }
 
-/* Boutons */
-button {
-    @apply px-4 py-2 rounded text-white font-semibold transition-all duration-200;
+/* Global Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--font);
 }
 
-button.bg-blue {
-    @apply bg-blue-600 hover:bg-blue-700;
+/* Toast Notifications Styles */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
 }
 
-button.bg-green {
-    @apply bg-green-600 hover:bg-green-700;
+.toast {
+    background: white;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    padding: 16px 20px;
+    min-width: 300px;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    animation: slideIn 0.3s ease-out;
+    pointer-events: auto;
+    transition: all 0.3s ease;
 }
 
-button.bg-red {
-    @apply bg-red-600 hover:bg-red-700;
+.toast:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4);
 }
 
-/* Champs de formulaire */
-input, select, textarea {
-    @apply border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+.toast-content {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text);
 }
 
-/* Containers */
-.container {
-    @apply mx-auto px-4 sm:px-6 lg:px-8;
+.toast-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
 }
 
-/* Alertes */
-.alert {
-    @apply px-4 py-3 rounded relative mb-4;
+.toast-close:hover {
+    background: rgba(148, 163, 184, 0.2);
+    color: var(--text);
 }
 
-.alert-success {
-    @apply bg-green-100 border border-green-400 text-green-700;
+/* Toast Types */
+.toast--success {
+    border-left: 4px solid var(--success);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(34, 197, 94, 0.05));
 }
 
-.alert-error {
-    @apply bg-red-100 border border-red-400 text-red-700;
+.toast--error {
+    border-left: 4px solid var(--danger);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(248, 113, 113, 0.05));
 }
 
-/* Tableaux */
-table {
-    @apply w-full border-collapse border border-gray-200;
+.toast--warning {
+    border-left: 4px solid #f59e0b;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(251, 191, 36, 0.05));
+    color: #7c2d12;
 }
 
-th, td {
-    @apply border border-gray-200 px-4 py-2 text-left;
+.toast--info {
+    border-left: 4px solid var(--primary);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(59, 130, 246, 0.05));
 }
 
-/* Navigation */
-.navbar {
-    @apply bg-white shadow px-4 py-3 flex justify-between items-center;
+/* Toast Animations */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
-.navbar a {
-    @apply text-gray-700 hover:text-gray-900 px-3 py-2;
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
 }
 
-/* Footer */
-footer {
-    @apply text-center py-6 text-gray-500 text-sm;
+/* Responsive Toasts */
+@media (max-width: 768px) {
+    .toast-container {
+        right: 15px;
+        left: 15px;
+    }
+
+    .toast {
+        min-width: auto;
+        max-width: none;
+    }
 }
 
-/* Scrollbar personnalisé */
-::-webkit-scrollbar {
-    width: 8px;
-}
+@media (max-width: 480px) {
+    .toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
 
-::-webkit-scrollbar-track {
-    background: #f3f4f6;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: #9ca3af;
-    border-radius: 4px;
+    .toast {
+        padding: 12px 16px;
+        font-size: 13px;
+    }
 }

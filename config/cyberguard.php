@@ -136,4 +136,29 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limiting (RateLimitMiddleware)
+    |--------------------------------------------------------------------------
+    */
+    'rate_limits' => [
+        // Limites par route (clé = nom de route)
+        'otp.send' => [
+            'max_attempts' => 3,
+            'decay_minutes' => 15,
+        ],
+        'otp.resend' => [
+            'max_attempts' => 3,
+            'decay_minutes' => 15,
+        ],
+        'otp.verify' => [
+            'max_attempts' => 5,
+            'decay_minutes' => 5,
+        ],
+        'login' => [
+            'max_attempts' => 5,
+            'decay_minutes' => 15,
+        ],
+    ],
+
 ];

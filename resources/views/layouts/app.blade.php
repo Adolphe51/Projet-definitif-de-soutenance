@@ -1,36 +1,92 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<html lang="fr">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <title>@yield('title', 'CyberGuard') — CyberGuard</title>
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
-            @include('layouts.navigation')
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    @vite(['resources/css/app.css', 'resources/js/dash.js'])
+    @if(request()->routeIs('intranet.*'))
+        @vite(['resources/css/intranet.css', 'resources/js/intranet.js'])
+    @endif
+</head>
+
+<body class="{{ request()->routeIs('intranet.*') ? 'intranet' : '' }}">
+
+    <div class="auth-container">
+
+        <main class="auth-card">
+
+            @include('layouts.header')
+
+            @if(request()->routeIs('intranet.*'))
+                <nav class="intranet-nav">
+                    <div class="intranet-nav-inner">
+                        <a href="{{ route('intranet.index') }}">Accueil</a>
+                        <a href="{{ route('intranet.students.index') }}">Étudiants</a>
+                        <a href="{{ route('intranet.courses.index') }}">Cours</a>
+                        <a href="{{ route('intranet.messages.index') }}">Messages</a>
+                        <a href="{{ route('intranet.enrollments.index') }}">Inscriptions</a>
+                        <a href="{{ route('intranet.attendances.index') }}">Présences</a>
                     </div>
-                </header>
-            @endisset
+                </nav>
+            @endif
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
-        </div>
-    </body>
+            <section class="auth-body">
+                @yield('content')
+            </section>
+
+        </main>
+
+        @include('layouts.footer')
+
+        <div id="toastContainer" class="toast-container"></div>
+
+    </div>
+
+    @if(session('success'))
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                console.log('Session success détectée:', "{{session('success')}}");
+                toast.success("{{session('success')}}");
+            });
+        </script>
+    @endif
+
+    @if(session('error'))
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                console.log('Session error détectée:', "{{session('error')}}");
+                toast.error("{{session('error')}}");
+            });
+        </script>
+    @endif
+
+    @if(session('info'))
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                console.log('Session info détectée:', "{{session('info')}}");
+                toast.info("{{session('info')}}");
+            });
+        </script>
+    @endif
+
+    @if(session('warning'))
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                console.log('Session warning détectée:', "{{session('warning')}}");
+                toast.warning("{{session('warning')}}");
+            });
+        </script>
+    @endif
+
+</body>
+
 </html>

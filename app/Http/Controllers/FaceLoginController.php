@@ -28,16 +28,17 @@ class FaceLoginController extends Controller
             if ($user->face_descriptor === $descriptor) {
                 Auth::login($user);
 
-                return response()->json([
-                    'success' => true,
-                    'redirect' => route('dashboard')
-                ]);
+        return response()->json([
+            'success' => true,
+            'redirect' => route('dashboard'),
+            'message' => 'Authentification faciale réussie ! Bienvenue sur CyberGuard.'
+        ]);
             }
         }
 
         return response()->json([
             'success' => false,
-            'message' => 'Visage non reconnu'
+            'message' => 'Visage non reconnu. Veuillez réessayer ou utiliser l\'authentification OTP.'
         ]);
     }
 
@@ -56,7 +57,7 @@ class FaceLoginController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Visage enregistré avec succès'
+            'message' => 'Visage enregistré avec succès. Vous pouvez maintenant utiliser l\'authentification faciale.'
         ]);
     }
 }

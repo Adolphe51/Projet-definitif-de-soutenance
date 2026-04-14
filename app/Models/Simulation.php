@@ -7,9 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class Simulation extends Model
 {
     protected $fillable = [
-        'name', 'attack_type', 'target_ip', 'duration_seconds',
-        'intensity', 'status', 'packets_sent', 'log',
-        'started_at', 'completed_at'
+        'name',
+        'attack_type',
+        'target_ip',
+        'duration_seconds',
+        'intensity',
+        'status',
+        'packets_sent',
+        'log',
+        'started_at',
+        'completed_at',
     ];
 
     protected $casts = [
@@ -19,6 +26,6 @@ class Simulation extends Model
 
     public static function attackTypes(): array
     {
-        return Attack::attackTypes();
+        return \App\Models\Attack::attackTypes();
     }
 }
