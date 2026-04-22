@@ -3,10 +3,13 @@
 namespace App\Listeners;
 
 use App\Events\IntranetDataChanged;
+use App\Enums\AuditImportance;
+use App\Enums\AuditResult;
 use App\Services\AttackDetectionService;
-use App\Models\AuditLog;
+use App\Services\Audit\AuditServiceWrapper;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class ProcessIntranetDataChange implements ShouldQueue
@@ -29,18 +32,23 @@ class ProcessIntranetDataChange implements ShouldQueue
     public function handle(IntranetDataChanged $event): void
     {
         // Log l'événement pour audit
-        AuditLog::create([
-            'user_id' => auth()->id(),
-            'action' => 'intranet_' . $event->entityType . '_' . $event->action,
-            'entity_type' => 'intranet_' . $event->entityType,
-            'entity_id' => $event->data['id'] ?? null,
-            'old_values' => null,
-            'new_values' => $event->data,
-            'ip_address' => $event->ipAddress,
-            'user_agent' => $event->userAgent,
-            'importance' => 'medium',
-            'result' => 'success',
-        ]);
+        AuditServiceWrapper::log(
+            'intranet_' . $event->entityType . '_' . $event->action,
+            'intranet_' . $event->entityType,
+            'intranet',
+            AuditResult::Autorise,
+            AuditImportance::Moyenne,
+            [
+                'user' => Auth::user(),
+                'entityId' => $event->data['id'] ?? null,
+                'oldValues' => null,
+                'newValues' => $event->data,
+                'ipAddress' => $event->ipAddress,
+                'metadata' => [
+                    'user_agent' => $event->userAgent,
+                ],
+            ]
+        );
 
         // Analyser pour détecter des patterns d'attaque potentiels
         $this->analyzeForAttacks($event);

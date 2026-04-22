@@ -77,6 +77,14 @@
     </script>
     @endif
 
+    @if(!empty($rateLimitError))
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            toast.error(@json($rateLimitError));
+        });
+    </script>
+    @endif
+
 </body>
 
 </html>

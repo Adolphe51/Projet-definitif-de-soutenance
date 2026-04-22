@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\Response;
 
 class RateLimitMiddleware
@@ -18,6 +19,18 @@ class RateLimitMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $ip = $request->ip();
+        $blockKey = "blocked_ip:{$ip}:rate_limit";
+
+        $blockedUntil = Cache::get($blockKey);
+        if (is_numeric($blockedUntil) && (int) $blockedUntil > now()->timestamp) {
+            $remainingSeconds = max(1, (int) $blockedUntil - now()->timestamp);
+
+            return $this->buildRateLimitResponse(
+                $request,
+                'Trop de tentatives. Veuillez réessayer plus tard.',
+                $remainingSeconds
+            );
+        }
         
         // Récupérer le nom de la route (avec fallback)
         $routeName = $request->route()?->getName() ?? 'unknown';
@@ -34,14 +47,14 @@ class RateLimitMiddleware
         // 🔐 Vérifier AVANT d'incrémenter
         if ($attempts >= $maxAttempts) {
             // Bloquer l'IP temporairement
-            $blockKey = "blocked_ip:{$ip}:rate_limit";
-            Cache::put($blockKey, true, now()->addMinutes($decayMinutes));
+            $blockedUntil = now()->addMinutes($decayMinutes)->timestamp;
+            Cache::put($blockKey, $blockedUntil, now()->addMinutes($decayMinutes));
             
-            return response()->json([
-                'error' => 'Trop de tentatives. Veuillez réessayer dans ' . $decayMinutes . ' minutes.',
-                'retry_after' => $decayMinutes * 60,
-                'blocked' => true
-            ], 429);
+            return $this->buildRateLimitResponse(
+                $request,
+                'Trop de tentatives. Veuillez réessayer dans ' . $decayMinutes . ' minutes.',
+                $decayMinutes * 60
+            );
         }
         
         // 🔐 Incrémenter AVANT de passer la requête
@@ -65,5 +78,26 @@ class RateLimitMiddleware
         
         // Retourner la configuration spécifique à la route ou la configuration par défaut
         return $config[$routeName] ?? $defaultConfig;
+    }
+
+    private function buildRateLimitResponse(Request $request, string $message, int $retryAfter): Response
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'error' => $message,
+                'retry_after' => $retryAfter,
+                'blocked' => true,
+            ], 429);
+        }
+
+        if ($request->route()?->getName() === 'login') {
+            return response()->view('auth.login', [
+                'rateLimitError' => $message,
+            ], 429);
+        }
+
+        return redirect()
+            ->to(Route::has('login') ? route('login') : url('/'))
+            ->with('error', $message);
     }
 }

@@ -6,10 +6,7 @@ use App\Models\SecuritySession;
 use App\Models\User;
 use App\Enums\AuditResult;
 use App\Services\Audit\AuditServiceWrapper as AuditAuditServiceWrapper;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Crypt;
 
 class SecuritySessionService
 {
@@ -25,6 +22,9 @@ class SecuritySessionService
      */
     public function createSession(User $user, Request $request): array
     {
+        $maxActiveSessions = (int) config('cyberguard.auth.sessions.max_active', 5);
+        $ttlHours = (int) config('cyberguard.auth.sessions.ttl_hours', 1);
+
         // 🔐 Limite sessions actives
         $activeSessions = SecuritySession::where('user_id', $user->id)
             ->where('is_revoked', false)
@@ -32,7 +32,7 @@ class SecuritySessionService
             ->orderBy('created_at', 'asc')
             ->get();
 
-        if ($activeSessions->count() >= 5) {
+        if ($activeSessions->count() >= $maxActiveSessions) {
             $oldest = $activeSessions->first();
             $oldest->revoke();
 
@@ -64,7 +64,7 @@ class SecuritySessionService
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'device_fingerprint' => $this->generateFingerprint($request),
-            'expires_at' => now()->addHours(1), // 🔐 Réduit à 1h (au lieu de 24h)
+            'expires_at' => now()->addHours($ttlHours),
             'last_activity_at' => now(),
             'is_revoked' => false,
         ]);

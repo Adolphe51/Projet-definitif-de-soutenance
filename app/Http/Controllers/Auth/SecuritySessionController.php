@@ -5,19 +5,25 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Services\Auth\SecuritySessionService as AuthSecuritySessionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class SecuritySessionController extends Controller
 {
     public function __construct(
         private readonly AuthSecuritySessionService $sessionService,
-    ) {}
+    ) {
+    }
 
     /**
      * Liste les sessions actives de l'utilisateur courant.
      */
     public function index(Request $request)
     {
-        $user = $request->attributes->get('user');
+        $user = $request->attributes->get('user') ?? Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Utilisateur non authentifié'], 401);
+        }
+
         $sessions = $this->sessionService->getActiveSessions($user);
 
         return response()->json([
@@ -27,7 +33,10 @@ class SecuritySessionController extends Controller
                 'user_agent' => $s->user_agent,
                 'last_activity_at' => $s->last_activity_at->toISOString(),
                 'expires_at' => $s->expires_at->toISOString(),
-                'is_current' => hash_equals($s->token, hash('sha256', $request->bearerToken())),
+                'is_current' => hash_equals(
+                    $s->access_token_hash,
+                    hash('sha256', (string) ($request->bearerToken() ?? $request->cookie('access_token', '')))
+                ),
             ]),
         ]);
     }
@@ -37,7 +46,11 @@ class SecuritySessionController extends Controller
      */
     public function revoke(string $id, Request $request)
     {
-        $user = $request->attributes->get('user');
+        $user = $request->attributes->get('user') ?? Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Utilisateur non authentifié'], 401);
+        }
+
         $revoked = $this->sessionService->revokeSession($id, $user, $request);
 
         if (!$revoked) {

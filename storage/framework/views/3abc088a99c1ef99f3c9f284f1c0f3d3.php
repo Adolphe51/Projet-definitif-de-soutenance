@@ -77,6 +77,14 @@
     </script>
     <?php endif; ?>
 
+    <?php if(!empty($rateLimitError)): ?>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            toast.error(<?php echo json_encode($rateLimitError, 15, 512) ?>);
+        });
+    </script>
+    <?php endif; ?>
+
 </body>
 
 </html>

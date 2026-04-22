@@ -17,15 +17,29 @@ class SecuritySession extends Model
         'user_id',
         'access_token_hash',
         'refresh_token_hash',
-        'ip_adress',
+        'ip_address',
         'user_agent',
         'device_fingerprint',
         'expires_at',
+        'last_activity_at',
         'is_revoked',
     ];
 
+    protected $appends = ['ip_address'];
+
+    public function getIpAddressAttribute(): ?string
+    {
+        return $this->attributes['ip_address'] ?? null;
+    }
+
+    public function setIpAddressAttribute(?string $value): void
+    {
+        $this->attributes['ip_address'] = $value;
+    }
+
     protected $casts = [
         'expires_at'       => 'datetime',
+        'last_activity_at' => 'datetime',
         'is_revoked'       => 'boolean',
     ];
 
@@ -42,6 +56,10 @@ class SecuritySession extends Model
      */
     public function isActive(): bool
     {
+        if (!$this->last_activity_at) {
+            return false;
+        }
+
         return !$this->is_revoked
             && $this->expires_at->isFuture()
             && $this->last_activity_at->diffInMinutes(now()) < config('session.lifetime', 120);

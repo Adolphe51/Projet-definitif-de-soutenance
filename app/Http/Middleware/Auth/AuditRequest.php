@@ -4,6 +4,7 @@ namespace App\Http\Middleware\Auth;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 use App\Enums\AuditResult;
 use App\Enums\AuditImportance;
@@ -13,12 +14,13 @@ class AuditRequest
 {
     public function __construct(
         private readonly AuditAuditServiceWrapper $auditService,
-    ) {}
+    ) {
+    }
 
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
-        $user = $request->attributes->get('user');
+        $user = $request->attributes->get('user') ?? Auth::user();
         $statusCode = $response->getStatusCode();
 
         $resultat = match (true) {

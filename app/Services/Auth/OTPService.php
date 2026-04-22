@@ -24,6 +24,9 @@ class OTPService
      */
     public function sendOtp(string $email, Request $request): array
     {
+        $ttlMinutes = (int) config('cyberguard.auth.otp.ttl_minutes', 3);
+        $codeLength = (int) config('cyberguard.auth.otp.code_length', 8);
+
         // ✅ NE PAS créer d'utilisateur ici
         $user = User::where('email', $email)->first();
 
@@ -56,14 +59,14 @@ class OTPService
             ->whereNull('used_at')
             ->update(['used_at' => now()]);
 
-        // 🔐 Génération OTP - 8 chiffres (plus sécurisé)
-        $code = str_pad(random_int(0, 99999999), 8, '0', STR_PAD_LEFT);
+        $maxNumber = (10 ** $codeLength) - 1;
+        $code = str_pad((string) random_int(0, $maxNumber), $codeLength, '0', STR_PAD_LEFT);
 
         $authCode = AuthCode::create([
             'user_id'    => $user->id,
             'email'      => $email,
             'code_hash'  => hash('sha256', $code),
-            'expires_at' => now()->addMinutes(3), // ⏱️ 3 minutes (plus sécurisé)
+            'expires_at' => now()->addMinutes($ttlMinutes),
             'attempts'   => 0,
             'ip_address' => $request->ip(),
         ]);
@@ -138,14 +141,16 @@ class OTPService
      */
     private function processVerification(AuthCode $authCode, User $user, string $code, Request $request): array
     {
+        $maxAttempts = (int) config('cyberguard.auth.otp.max_attempts', 3);
+
         // Vérifier les tentatives
-        if ($authCode->hasExceededAttempts()) {
+        if ($authCode->hasExceededAttempts($maxAttempts)) {
             return $this->handleExceededAttempts($authCode, $user, $request);
         }
 
         // Vérifier le code
         if (!hash_equals($authCode->code_hash, hash('sha256', $code))) {
-            return $this->handleWrongCode($authCode, $user, $request);
+            return $this->handleWrongCode($authCode, $user, $request, $maxAttempts);
         }
 
         // Code correct - vérifier le compte
@@ -215,7 +220,7 @@ class OTPService
         return ['success' => false, 'message' => 'Trop de tentatives, demandez un nouveau code.'];
     }
 
-    private function handleWrongCode(AuthCode $authCode, User $user, Request $request): array
+    private function handleWrongCode(AuthCode $authCode, User $user, Request $request, int $maxAttempts): array
     {
         $authCode->incrementAttempts();
 
@@ -228,15 +233,15 @@ class OTPService
                 'entityId' => $user->id,
                 'actorId' => $user->id,
                 'ipAddress' => $request->ip(),
-                'metadata' => [
-                    'message' => "OTP incorrect (tentative {$authCode->attempts})",
-                    'user_agent' => $request->userAgent(),
-                    'remaining_attempts' => 3 - $authCode->attempts,
+                    'metadata' => [
+                        'message' => "OTP incorrect (tentative {$authCode->attempts})",
+                        'user_agent' => $request->userAgent(),
+                        'remaining_attempts' => max(0, $maxAttempts - $authCode->attempts),
+                    ]
                 ]
-            ]
-        );
+            );
 
-        if ($authCode->attempts >= 3) {
+        if ($authCode->attempts >= $maxAttempts) {
             $this->audit_service_wrapper->logCritique(
                 'otp.brute_force_attempt',
                 'User',
@@ -249,7 +254,7 @@ class OTPService
                     'metadata' => [
                         'message' => 'Tentative de force brute détectée sur OTP',
                         'attempt_count' => $authCode->attempts,
-                        'timeframe' => '3 minutes',
+                        'timeframe' => config('cyberguard.auth.otp.ttl_minutes', 3) . ' minutes',
                         'user_agent' => $request->userAgent(),
                     ]
                 ]
@@ -263,7 +268,7 @@ class OTPService
     {
         $authCode->markAsUsed();
 
-        if ($user->profile && !$user->profile->actif) {
+        if (!$user->isActive()) {
             return $this->handleDisabledAccount($user, $request);
         }
 

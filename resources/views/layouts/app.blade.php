@@ -14,7 +14,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/dash.js'])
     @if(request()->routeIs('intranet.*'))
-        @vite(['resources/css/intranet.css', 'resources/js/intranet.js'])
+        @vite(['resources/css/intranet.css', 'resources/css/components.css', 'resources/js/intranet.js'])
     @endif
 </head>
 
@@ -35,6 +35,7 @@
                         <a href="{{ route('intranet.messages.index') }}">Messages</a>
                         <a href="{{ route('intranet.enrollments.index') }}">Inscriptions</a>
                         <a href="{{ route('intranet.attendances.index') }}">Présences</a>
+                        <a href="{{ route('intranet.components') }}" class="small-link">📚 Composants</a>
                     </div>
                 </nav>
             @endif

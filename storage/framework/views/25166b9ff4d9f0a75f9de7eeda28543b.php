@@ -13,15 +13,32 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/dash.js']); ?>
+    <?php if(request()->routeIs('intranet.*')): ?>
+        <?php echo app('Illuminate\Foundation\Vite')(['resources/css/intranet.css', 'resources/css/components.css', 'resources/js/intranet.js']); ?>
+    <?php endif; ?>
 </head>
 
-<body>
+<body class="<?php echo e(request()->routeIs('intranet.*') ? 'intranet' : ''); ?>">
 
     <div class="auth-container">
 
         <main class="auth-card">
 
             <?php echo $__env->make('layouts.header', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+            <?php if(request()->routeIs('intranet.*')): ?>
+                <nav class="intranet-nav">
+                    <div class="intranet-nav-inner">
+                        <a href="<?php echo e(route('intranet.index')); ?>">Accueil</a>
+                        <a href="<?php echo e(route('intranet.students.index')); ?>">Étudiants</a>
+                        <a href="<?php echo e(route('intranet.courses.index')); ?>">Cours</a>
+                        <a href="<?php echo e(route('intranet.messages.index')); ?>">Messages</a>
+                        <a href="<?php echo e(route('intranet.enrollments.index')); ?>">Inscriptions</a>
+                        <a href="<?php echo e(route('intranet.attendances.index')); ?>">Présences</a>
+                        <a href="<?php echo e(route('intranet.components')); ?>" class="small-link">📚 Composants</a>
+                    </div>
+                </nav>
+            <?php endif; ?>
 
             <section class="auth-body">
                 <?php echo $__env->yieldContent('content'); ?>
@@ -36,42 +53,41 @@
     </div>
 
     <?php if(session('success')): ?>
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            console.log('Session success détectée:', "<?php echo e(session('success')); ?>");
-            toast.success("<?php echo e(session('success')); ?>");
-        });
-    </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                console.log('Session success détectée:', "<?php echo e(session('success')); ?>");
+                toast.success("<?php echo e(session('success')); ?>");
+            });
+        </script>
     <?php endif; ?>
 
     <?php if(session('error')): ?>
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            console.log('Session error détectée:', "<?php echo e(session('error')); ?>");
-            toast.error("<?php echo e(session('error')); ?>");
-        });
-    </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                console.log('Session error détectée:', "<?php echo e(session('error')); ?>");
+                toast.error("<?php echo e(session('error')); ?>");
+            });
+        </script>
     <?php endif; ?>
 
     <?php if(session('info')): ?>
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            console.log('Session info détectée:', "<?php echo e(session('info')); ?>");
-            toast.info("<?php echo e(session('info')); ?>");
-        });
-    </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                console.log('Session info détectée:', "<?php echo e(session('info')); ?>");
+                toast.info("<?php echo e(session('info')); ?>");
+            });
+        </script>
     <?php endif; ?>
 
     <?php if(session('warning')): ?>
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            console.log('Session warning détectée:', "<?php echo e(session('warning')); ?>");
-            toast.warning("<?php echo e(session('warning')); ?>");
-        });
-    </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                console.log('Session warning détectée:', "<?php echo e(session('warning')); ?>");
+                toast.warning("<?php echo e(session('warning')); ?>");
+            });
+        </script>
     <?php endif; ?>
 
 </body>
 
-</html>
-<?php /**PATH /home/olivierfatombi/Desktop/prog/dev/memo/Projet-definitif-de-soutenance/resources/views/layouts/app.blade.php ENDPATH**/ ?>
+</html><?php /**PATH /home/olivierfatombi/Desktop/prog/dev/memo/Projet-definitif-de-soutenance/resources/views/layouts/app.blade.php ENDPATH**/ ?>

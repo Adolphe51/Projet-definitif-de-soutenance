@@ -21,7 +21,7 @@ class GeoController extends Controller
 
     public function trace(string $ip)
     {
-        $geo    = GeoService::lookup($ip);
+        $geo = GeoService::lookup($ip);
         $attack = Attack::where('source_ip', $ip)->latest()->first();
         return view('attacks.trace', compact('ip', 'geo', 'attack'));
     }
@@ -38,21 +38,33 @@ class GeoController extends Controller
 
     private function buildMapData(): array
     {
-        $attacks = Attack::orderByDesc('created_at')
+        $attacks = Attack::select([
+            'id',
+            'source_ip',
+            'type',
+            'severity',
+            'country',
+            'city',
+            'latitude',
+            'longitude',
+            'status',
+            'created_at',
+        ])
+            ->orderByDesc('created_at')
             ->limit(200)
             ->get()
             ->map(fn($a) => [
-                'id'        => $a->id,
-                'ip'        => $a->source_ip,
-                'type'      => $a->type,
-                'severity'  => $a->severity,
-                'country'   => $a->country,
-                'city'      => $a->city,
-                'lat'       => $a->latitude,
-                'lon'       => $a->longitude,
-                'color'     => $a->severity_color,
-                'status'    => $a->status,
-                'time'      => $a->created_at?->diffForHumans(),
+                'id' => $a->id,
+                'ip' => $a->source_ip,
+                'type' => $a->type,
+                'severity' => $a->severity,
+                'country' => $a->country,
+                'city' => $a->city,
+                'lat' => $a->latitude,
+                'lon' => $a->longitude,
+                'color' => $a->severity_color,
+                'status' => $a->status,
+                'time' => $a->created_at?->diffForHumans(),
             ]);
 
         // Cible principale (notre serveur)
@@ -60,11 +72,11 @@ class GeoController extends Controller
 
         return [
             'attacks' => $attacks,
-            'target'  => $target,
-            'stats'   => [
-                'total'    => $attacks->count(),
+            'target' => $target,
+            'stats' => [
+                'total' => $attacks->count(),
                 'critical' => $attacks->where('severity', 'critical')->count(),
-                'blocked'  => $attacks->where('status', 'blocked')->count(),
+                'blocked' => $attacks->where('status', 'blocked')->count(),
             ]
         ];
     }

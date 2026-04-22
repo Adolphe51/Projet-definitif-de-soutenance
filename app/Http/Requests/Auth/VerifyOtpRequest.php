@@ -26,7 +26,7 @@ class VerifyOtpRequest extends FormRequest
             'code' => [
                 'required',
                 'string',
-                'regex:/^\d{8}$/', // exactement 6 chiffres
+                'regex:/^\d{8}$/', // exactement 8 chiffres
             ],
         ];
     }
@@ -37,7 +37,7 @@ class VerifyOtpRequest extends FormRequest
             'email.required' => 'L\'adresse email est obligatoire.',
             'email.email' => 'L\'adresse email n\'est pas valide.',
             'code.required' => 'Le code OTP est obligatoire.',
-            'code.regex' => 'Le code doit contenir exactement 6 chiffres.',
+            'code.regex' => 'Le code doit contenir exactement 8 chiffres.',
         ];
     }
 }

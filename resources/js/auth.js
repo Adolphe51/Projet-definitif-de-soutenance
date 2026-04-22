@@ -67,8 +67,10 @@
     const resendBtn = document.getElementById('resendBtn');
     const resendTimerElem = document.getElementById('resendTimer');
     const authForm = document.querySelector('.auth-form');
+    const otpForm = document.querySelector('.otp-form');
     const formInputs = document.querySelectorAll('.form-input');
     const authButton = document.querySelector('.auth-button');
+    const configuredOtpLength = Number(otpForm?.dataset.otpLength || digits.length || 8);
 
     // =========================
     // OTP Input Management
@@ -103,12 +105,53 @@
         });
         
         // Auto-submit when all digits are filled
-        if (filledCount === digits.length) {
+        if (filledCount === configuredOtpLength && configuredOtpLength > 0) {
             const form = document.querySelector('.otp-form');
             if (form) {
                 form.submit();
             }
         }
+    }
+
+    function validateFormInput(input) {
+        const value = input.value.trim();
+        let valid = true;
+
+        input.classList.remove('error', 'success');
+
+        if (input.hasAttribute('readonly') || input.getAttribute('aria-readonly') === 'true') {
+            return true;
+        }
+
+        if (input.hasAttribute('required') && value === '') {
+            valid = false;
+        } else if (input.type === 'email' && value !== '') {
+            valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+        } else if (input.type === 'password' && input.minLength > 0) {
+            valid = value.length >= input.minLength;
+        }
+
+        input.classList.add(valid ? 'success' : 'error');
+
+        return valid;
+    }
+
+    function validateOtpCode() {
+        if (!hiddenInput || !otpForm) {
+            return true;
+        }
+
+        const valid = hiddenInput.value.length === configuredOtpLength;
+
+        digits.forEach((input) => {
+            input.classList.toggle('error', !valid);
+        });
+
+        if (!valid) {
+            showToast(`Le code doit contenir ${configuredOtpLength} chiffres`, 'error');
+        }
+
+        return valid;
     }
 
     if (digits.length) {
@@ -142,7 +185,7 @@
     // =========================
     // OTP Timer
     // =========================
-    let otpSeconds = 120;
+    let otpSeconds = Number(otpForm?.dataset.otpSeconds || 120);
     let otpInterval;
 
     function startOtpTimer() {
@@ -176,7 +219,7 @@
         if (!resendBtn || !resendTimerElem) return;
 
         // Réinitialiser le timer à 180 secondes
-        resendSeconds = 180;
+        resendSeconds = Number(otpForm?.dataset.resendSeconds || 180);
 
         resendBtn.disabled = true;
         resendBtn.style.opacity = '0.6';
@@ -223,6 +266,10 @@
             }
         });
 
+        if (form.classList.contains('otp-form') && !validateOtpCode()) {
+            isValid = false;
+        }
+
         if (!isValid) {
             event.preventDefault();
             showToast('Veuillez vérifier les champs du formulaire', 'error');
@@ -232,19 +279,7 @@
         // Show loading state
         authButton.classList.add('loading');
         authButton.disabled = true;
-        
-        const originalText = authButton.innerHTML;
         authButton.innerHTML = '<div class="spinner"></div><span>Authentification...</span>';
-
-        // Reset button after 3 seconds if not redirected
-        setTimeout(() => {
-            if (authButton.disabled) {
-                authButton.classList.remove('loading');
-                authButton.disabled = false;
-                authButton.innerHTML = originalText;
-                showToast('Une erreur est survenue, veuillez réessayer', 'error');
-            }
-        }, 3000);
     }
 
     if (authForm) {

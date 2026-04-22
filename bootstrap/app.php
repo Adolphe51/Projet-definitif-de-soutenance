@@ -3,6 +3,7 @@
 use App\Http\Middleware\Auth\AuditRequest as AuthAuditRequest;
 use App\Http\Middleware\Auth\CheckIpAuthorized as AuthCheckIpAuthorized;
 use App\Http\Middleware\Auth\SecuritySessionMiddleware as AuthSecuritySessionMiddleware;
+use App\Http\Middleware\Auth\EnhancedCsrfProtection;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,17 +23,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // 4. session.security - Authentification par session
         // 5. ip.authorized - Vérification IP autorisée
         // 6. audit - Journalisation en dernier (après authentification)
-        
+    
         $middleware->alias([
-            'csrf'                      => \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
-            'honeypot'                  => \App\Http\Middleware\HoneypotMiddleware::class,
-            'blocked.ip'                => \App\Http\Middleware\CheckBlockedIp::class,
-            'session.security'          => AuthSecuritySessionMiddleware::class,
-            'ip.authorized'             => AuthCheckIpAuthorized::class,
-            'audit'                     => AuthAuditRequest::class,
-            'throttle'                  => \App\Http\Middleware\RateLimitMiddleware::class,
+            'csrf' => EnhancedCsrfProtection::class,
+            'honeypot' => \App\Http\Middleware\HoneypotMiddleware::class,
+            'blocked.ip' => \App\Http\Middleware\CheckBlockedIp::class,
+            'session.security' => AuthSecuritySessionMiddleware::class,
+            'ip.authorized' => AuthCheckIpAuthorized::class,
+            'audit' => AuthAuditRequest::class,
+            'throttle' => \App\Http\Middleware\RateLimitMiddleware::class,
         ]);
-        
+
         // 🔐 Groupes de middleware dans le bon ordre pour les routes protégées
         $middleware->group('secure', [
             'csrf',

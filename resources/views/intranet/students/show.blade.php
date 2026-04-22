@@ -36,6 +36,9 @@
             @endforeach
         </ul>
 
-        <p><a href="{{ route('intranet.students.index') }}">Retour à la liste</a></p>
+        <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+            <a href="{{ route('intranet.students.edit', $student) }}" class="button primary">Éditer</a>
+            <a href="{{ route('intranet.students.index') }}" class="button secondary">Retour</a>
+        </div>
     </div>
 @endsection

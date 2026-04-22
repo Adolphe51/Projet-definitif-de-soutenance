@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\SendOtpRequest;
+use App\Http\Requests\Auth\VerifyOtpRequest;
 use App\Models\User;
 use App\Services\Auth\OTPService as AuthOTPService;
 use App\Services\Auth\SecuritySessionService as AuthSecuritySessionService;
+use App\Services\Auth\AuthenticationLoggingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 
@@ -16,7 +20,8 @@ class LoginController extends Controller
     public function __construct(
         private readonly AuthOTPService $otpService,
         private readonly AuthSecuritySessionService $sessionService,
-    ) {}
+    ) {
+    }
 
     /**
      * Formulaire de connexion
@@ -35,54 +40,58 @@ class LoginController extends Controller
     /**
      * Étape 1 : Envoyer un code OTP à l'adresse email.
      */
-    public function sendOtp(Request $request)
+    public function sendOtp(SendOtpRequest $request)
     {
-        // Validation manuelle avec les mêmes règles que SendOtpRequest
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:users,email',
-            'password' => 'required|string|min:8',
-        ]);
+        $email = (string) $request->string('email');
+        $password = (string) $request->string('password');
+        $user = User::where('email', $email)->first();
 
-        if ($validator->fails()) {
-            return back()->with('error', $validator->errors()->first());
-        }
+        if (!$user || !Hash::check($password, $user->password)) {
+            AuthenticationLoggingService::logAuthenticationAttempt(
+                $email,
+                false,
+                $request,
+                'Invalid email or password'
+            );
 
-        $credentials = $request->all();
-        $email = $credentials['email'];
-        $password = $credentials['password'];
+            sleep(1);
 
-        // 🔐 Vérification email + password
-        if (!Auth::attempt([
-            'email' => $email,
-            'password' => $password
-        ])) {
-            // On peut faire un audit ici via OTPService si méthode ajoutée
             return back()->with('error', 'Identifiants incorrects');
         }
 
-        $user = User::where('email', $email)->first();
+        if (!$user->isActive()) {
+            AuthenticationLoggingService::logAuthenticationAttempt(
+                $email,
+                false,
+                $request,
+                'Disabled account'
+            );
 
-        if (!$user) {
-            // Simuler l'envoi pour éviter l’énumération
-            sleep(1);
-            return redirect()->back()->withInput()
-                ->with('error', 'Si un compte existe, un code a été envoyé.');
+            return back()->with('error', 'Compte désactivé');
         }
 
-        $result = $this->otpService->sendOtp(email: $email, request: $request);
+        AuthenticationLoggingService::logAuthenticationAttempt(
+            $email,
+            true,
+            $request
+        );
 
+        $request->session()->regenerate();
+        $this->storePendingAuthentication($request, $user);
+
+        $result = $this->otpService->sendOtp(email: $email, request: $request);
         if (!$result['success']) {
+            $this->clearPendingAuthentication($request);
+
             return redirect()->back()->withInput()
                 ->with('error', 'Impossible d’envoyer le code OTP');
         }
 
-        // Dev only: stocker OTP pour debug
         if (app()->environment('local')) {
             session([
                 'otp_email' => $email,
                 'debug_otp' => $result['debug_otp'] ?? null,
             ]);
-            // Afficher le code OTP en toast pour le développement
             session()->flash('debug_otp_toast', $result['debug_otp'] ?? null);
         } else {
             session(['otp_email' => $email]);
@@ -97,18 +106,27 @@ class LoginController extends Controller
      */
     public function resendOtp(Request $request)
     {
-        // Validation uniquement sur l'email
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:users,email',
+            'email' => 'required|email',
         ]);
 
         if ($validator->fails()) {
             return back()->with('error', $validator->errors()->first());
         }
 
-        $email = $request->email;
+        $email = (string) $request->string('email');
+        $pendingAuth = $this->getPendingAuthentication($request);
 
-        // Appel direct à OTPService->sendOtp() avec uniquement l'email
+        if (
+            !$pendingAuth
+            || !hash_equals($pendingAuth['email'], $email)
+        ) {
+            $this->clearPendingAuthentication($request);
+
+            return redirect()->route('login')
+                ->with('error', 'Votre session de connexion a expiré. Veuillez recommencer.');
+        }
+
         $result = $this->otpService->sendOtp(email: $email, request: $request);
 
         if (!$result['success']) {
@@ -122,7 +140,6 @@ class LoginController extends Controller
                 'otp_email' => $email,
                 'debug_otp' => $result['debug_otp'] ?? null,
             ]);
-            // Afficher le code OTP en toast pour le développement
             session()->flash('debug_otp_toast', $result['debug_otp'] ?? null);
         } else {
             session(['otp_email' => $email]);
@@ -137,10 +154,12 @@ class LoginController extends Controller
      */
     public function showVerifyForm()
     {
-        $email = session('otp_email');
+        $pendingAuth = $this->getPendingAuthentication(request());
+        $email = $pendingAuth['email'] ?? null;
+
         if (!$email) {
             return redirect()->route('login')
-                ->with('error', 'Veuillez saisir votre email.');
+                ->with('error', 'Votre session de connexion a expiré. Veuillez recommencer.');
         }
 
         return view('auth.verify-otp', compact('email'));
@@ -149,34 +168,63 @@ class LoginController extends Controller
     /**
      * Étape 3 : Vérifier le code OTP et créer une session.
      */
-    public function verifyOtp(Request $request)
+    public function verifyOtp(VerifyOtpRequest $request)
     {
-        // Validation manuelle avec les mêmes règles que VerifyOtpRequest
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:users,email',
-            'code' => 'required|digits:6',
-        ]);
+        $pendingAuth = $this->getPendingAuthentication($request);
+        $email = (string) $request->string('email');
+        $code = (string) $request->string('code');
 
-        if ($validator->fails()) {
-            return back()->with('error', $validator->errors()->first());
+        if (
+            !$pendingAuth
+            || !hash_equals($pendingAuth['email'], $email)
+        ) {
+            $this->clearPendingAuthentication($request);
+
+            return redirect()->route('login')
+                ->with('error', 'Votre session de connexion a expiré. Veuillez recommencer.');
         }
-
-        $validated = $request->all();
-        $email = $validated['email'];
-        $code  = $validated['code'];
 
         $result = $this->otpService->verifyOtp(email: $email, code: $code, request: $request);
 
         if (!$result['success']) {
+            AuthenticationLoggingService::logOtpAttempt(
+                $email,
+                false,
+                $request,
+                $result['message'] ?? 'Invalid or expired code'
+            );
             return redirect()->back()
                 ->withInput()
                 ->with('error', $result['message']);
         }
 
-        // Création session sécurisée
+        if ((int) $result['user']->id !== (int) $pendingAuth['user_id']) {
+            $this->clearPendingAuthentication($request);
+
+            AuthenticationLoggingService::logOtpAttempt(
+                $email,
+                false,
+                $request,
+                'Pending authentication mismatch'
+            );
+
+            return redirect()->route('login')
+                ->with('error', 'Session de connexion invalide. Veuillez recommencer.');
+        }
+
+        AuthenticationLoggingService::logOtpAttempt(
+            $email,
+            true,
+            $request
+        );
+
         $tokens = $this->sessionService->createSession($result['user'], $request);
 
-        Auth::login($result['user']); // Laravel recognize user
+        Auth::login($result['user']);
+        $request->session()->regenerate();
+        $this->clearPendingAuthentication($request);
+        $secureCookie = config('session.secure');
+        $secureCookie = is_null($secureCookie) ? $request->isSecure() : (bool) $secureCookie;
 
         $cookie = Cookie::make(
             'access_token',
@@ -184,12 +232,54 @@ class LoginController extends Controller
             60, // 1h
             '/',
             null,
+            $secureCookie,
             true,
-            true // httpOnly
+            false,
+            'strict'
         );
 
         return redirect()->route('admin.dashboard')
             ->withCookie($cookie)
             ->with('success', 'Authentification réussie ! Bienvenue sur CyberGuard.');
+    }
+
+    private function storePendingAuthentication(Request $request, User $user): void
+    {
+        $request->session()->put('pending_auth', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'created_at' => now()->timestamp,
+        ]);
+    }
+
+    private function getPendingAuthentication(Request $request): ?array
+    {
+        $pendingAuth = $request->session()->get('pending_auth');
+
+        if (!is_array($pendingAuth)) {
+            return null;
+        }
+
+        $createdAt = (int) ($pendingAuth['created_at'] ?? 0);
+        $ttlMinutes = (int) config('cyberguard.auth.otp.pending_auth_ttl_minutes', 10);
+        $expiredAt = now()->subMinutes($ttlMinutes)->timestamp;
+
+        if ($createdAt <= $expiredAt) {
+            $this->clearPendingAuthentication($request);
+
+            return null;
+        }
+
+        return $pendingAuth;
+    }
+
+    private function clearPendingAuthentication(Request $request): void
+    {
+        $request->session()->forget([
+            'pending_auth',
+            'otp_email',
+            'debug_otp',
+            'debug_otp_toast',
+        ]);
     }
 }

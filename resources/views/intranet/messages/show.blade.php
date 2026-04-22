@@ -6,18 +6,26 @@
     <div class="container">
         <h1>Détails du message</h1>
 
-        <p><strong>Expéditeur :</strong> {{ $message->sender->first_name ?? 'N/A' }} {{ $message->sender->last_name ?? '' }}
-        </p>
-        <p><strong>Destinataire :</strong> {{ $message->recipient->first_name ?? 'N/A' }}
-            {{ $message->recipient->last_name ?? '' }}</p>
-        <p><strong>Sujet :</strong> {{ $message->subject }}</p>
-        <p><strong>Contenu :</strong></p>
-        <p>{{ $message->body }}</p>
-        <p><strong>Lu :</strong> {{ $message->is_read ? 'Oui' : 'Non' }}</p>
+        <dl>
+            <dt>Expéditeur</dt>
+            <dd>{{ $message->sender->first_name ?? 'N/A' }} {{ $message->sender->last_name ?? '' }}</dd>
 
-        <div>
-            <a href="{{ route('intranet.messages.edit', $message) }}">Éditer</a>
-            <a href="{{ route('intranet.messages.index') }}">Retour</a>
+            <dt>Destinataire</dt>
+            <dd>{{ $message->recipient->first_name ?? 'N/A' }} {{ $message->recipient->last_name ?? '' }}</dd>
+
+            <dt>Sujet</dt>
+            <dd>{{ $message->subject }}</dd>
+
+            <dt>Contenu</dt>
+            <dd>{{ $message->body }}</dd>
+
+            <dt>Lu</dt>
+            <dd>{{ $message->is_read ? 'Oui' : 'Non' }}</dd>
+        </dl>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+            <a href="{{ route('intranet.messages.edit', $message) }}" class="button primary">Éditer</a>
+            <a href="{{ route('intranet.messages.index') }}" class="button secondary">Retour</a>
         </div>
     </div>
 @endsection

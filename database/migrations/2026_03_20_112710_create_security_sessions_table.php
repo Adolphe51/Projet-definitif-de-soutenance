@@ -18,7 +18,7 @@ return new class extends Migration {
 
             $table->string('refresh_token_hash', 64)->nullable()->unique();
 
-            $table->ipAddress('ip_adress')->nullable();
+            $table->ipAddress('ip_address')->nullable();
 
             $table->text('user_agent')->nullable();
 

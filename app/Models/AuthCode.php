@@ -62,8 +62,10 @@ class AuthCode extends Model
      * Vérifie si le nombre maximal de tentatives a été dépassé.
      * 🔐 CORRECTION : Limite à 3 tentatives (au lieu de 5)
      */
-    public function hasExceededAttempts(int $max = 3): bool
+    public function hasExceededAttempts(?int $max = null): bool
     {
+        $max ??= (int) config('cyberguard.auth.otp.max_attempts', 3);
+
         return $this->attempts >= $max;
     }
 

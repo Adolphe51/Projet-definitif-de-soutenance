@@ -11,21 +11,16 @@ class LogoutController extends Controller
 {
     public function __construct(
         private readonly LogoutService $logoutService,
-    ) {}
+    ) {
+    }
 
     /**
      * Déconnexion — révoque la session courante ou toutes les sessions.
      */
     public function logout(LogoutRequest $request)
     {
-        // Améliorer la détection de l'utilisateur
-        $user = $request->attributes->get('user');
-        
-        // Si l'utilisateur n'est pas trouvé via les attributs, essayer via Auth::user()
-        if (!$user) {
-            $user = Auth::user();
-        }
-        
+        $user = $request->attributes->get('user') ?? Auth::user();
+
         // Si l'utilisateur n'est toujours pas trouvé, essayer via le cookie
         if (!$user) {
             $sessionToken = $request->bearerToken() ?? $request->cookie('access_token');

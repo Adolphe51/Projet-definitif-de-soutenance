@@ -90,6 +90,16 @@ php artisan cyberguard:autoblock --threshold=5 --window=10
 php artisan cyberguard:cleanup --days=30
 ```
 
+## 🧪 Tests
+
+```bash
+composer test
+vendor/bin/phpunit --configuration phpunit.xml.dist
+```
+
+- `composer test` exécute les tests fonctionnels du projet.
+- `vendor/bin/phpunit --configuration phpunit.xml.dist` lance la batterie de validation Phase 5.
+
 ---
 
 ## 🗺️ Pages Principales

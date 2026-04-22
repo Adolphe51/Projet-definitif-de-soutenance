@@ -1,7 +1,16 @@
 <?php $__env->startSection('content'); ?>
 
+    <?php
+        $otpLength = (int) config('cyberguard.auth.otp.code_length', 8);
+        $otpTtlSeconds = (int) config('cyberguard.auth.otp.ttl_minutes', 3) * 60;
+        $resendDelaySeconds = (int) config('cyberguard.auth.otp.resend_delay_seconds', 180);
+    ?>
+
     <div>
-        <form method="POST" action="<?php echo e(route('otp.verify')); ?>" class="auth-form otp-form">
+        <form method="POST" action="<?php echo e(route('otp.verify')); ?>" class="auth-form otp-form"
+            data-otp-length="<?php echo e($otpLength); ?>"
+            data-otp-seconds="<?php echo e($otpTtlSeconds); ?>"
+            data-resend-seconds="<?php echo e($resendDelaySeconds); ?>">
             <?php echo csrf_field(); ?>
 
             <!-- Email Display -->
@@ -14,9 +23,9 @@
 
             <!-- OTP Input -->
             <div class="form-group">
-                <label for="code" class="form-label">Code de vérification à 6 chiffres</label>
+                <label for="code" class="form-label">Code de vérification à <?php echo e($otpLength); ?> chiffres</label>
                 <div class="otp-container" aria-label="Code OTP">
-                    <?php for($i = 0; $i < 8; $i++): ?>
+                    <?php for($i = 0; $i < $otpLength; $i++): ?>
                         <input type="text" class="otp-input" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
                     <?php endfor; ?>
                 </div>
@@ -27,7 +36,7 @@
             <!-- OTP Timer -->
             <div class="otp-info" role="status" aria-live="polite">
                 <span>Code valable pendant</span>
-                <strong id="otpTimer" class="otp-timer">02:00</strong>
+                <strong id="otpTimer" class="otp-timer"><?php echo e(gmdate('i:s', $otpTtlSeconds)); ?></strong>
             </div>
 
             <!-- Submit Button -->
@@ -43,7 +52,7 @@
                 <?php echo csrf_field(); ?>
                 <input type="hidden" name="email" value="<?php echo e(old('email', session('otp_email'))); ?>">
                 <button id="resendBtn" class="auth-button secondary" disabled>
-                    <span>Renvoyer le code dans <span id="resendTimer">180</span>s</span>
+                    <span>Renvoyer le code dans <span id="resendTimer"><?php echo e($resendDelaySeconds); ?></span>s</span>
                 </button>
             </form>
 
@@ -54,6 +63,5 @@
     </div>
 
 <?php $__env->stopSection(); ?>
-
 
 <?php echo $__env->make('layouts.auth.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/olivierfatombi/Desktop/prog/dev/memo/Projet-definitif-de-soutenance/resources/views/auth/verify-otp.blade.php ENDPATH**/ ?>

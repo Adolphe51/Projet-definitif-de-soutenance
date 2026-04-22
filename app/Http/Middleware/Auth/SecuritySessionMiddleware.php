@@ -14,7 +14,8 @@ class SecuritySessionMiddleware
     public function __construct(
         private readonly SecuritySessionService $sessionService,
         private readonly AuditServiceWrapper $auditService,
-    ) {}
+    ) {
+    }
 
     public function handle(Request $request, Closure $next)
     {
@@ -71,7 +72,7 @@ class SecuritySessionMiddleware
         }
 
         // 3. Vérifier l'empreinte navigateur (déjà faite dans validateSession)
-        
+
         // 4. Vérifier si l'utilisateur est actif
         if (!$session->user->is_active) {
             $this->auditService->logCritique(
@@ -99,6 +100,7 @@ class SecuritySessionMiddleware
 
         // 5. Définir l'utilisateur pour Laravel Auth
         Auth::setUser($session->user);
+        $request->attributes->set('user', $session->user);
         $request->attributes->set('session', $session);
 
         return $next($request);

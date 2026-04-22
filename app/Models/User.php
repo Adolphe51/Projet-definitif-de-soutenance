@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -21,7 +22,12 @@ class User extends Authenticatable
         'nom',
         'email',
         'password',
-        'is_active'
+        'is_active',
+        'email_verified_at',
+        'face_descriptor',
+        'last_ip',
+        'last_login',
+        'login_attempts',
     ];
 
     /**
@@ -39,6 +45,8 @@ class User extends Authenticatable
         'uuid' => 'string',
         'password' => 'hashed',
         'is_active' => 'boolean',
+        'email_verified_at' => 'datetime',
+        'last_login' => 'datetime',
     ];
 
     protected static function boot()
@@ -63,7 +71,17 @@ class User extends Authenticatable
         return $this->is_active === true;
     }
 
-    public function securitySessions()
+    public function getNameAttribute(): string
+    {
+        return (string) $this->attributes['nom'];
+    }
+
+    public function setNameAttribute(?string $value): void
+    {
+        $this->attributes['nom'] = $value;
+    }
+
+    public function securitySessions(): HasMany
     {
         return $this->hasMany(SecuritySession::class);
     }
@@ -80,7 +98,7 @@ class User extends Authenticatable
 
     public function scopeWithRole($query, string $role)
     {
-        return $query->whereHas('roles', fn($q) => $q->where('name', $role));
+        return $query->whereHas('roles', fn($q) => $q->where('role', $role));
     }
 
     public function scopeWithAllRelations($query)
@@ -91,21 +109,21 @@ class User extends Authenticatable
         ]);
     }
 
-    public function roles()
+    public function roles(): HasMany
     {
         return $this->hasMany(UserRole::class);
     }
 
     public function hasRole(string $role): bool
     {
-        return $this->roles()->where('name', $role)->exists();
+        return $this->roles()->where('role', $role)->exists();
     }
 
     public function hasPermission(string $permission): bool
     {
         return $this->roles()
             ->whereHas('permissions', function ($query) use ($permission) {
-                $query->where('name', $permission);
+                $query->where('nom', $permission);
             })
             ->exists();
     }

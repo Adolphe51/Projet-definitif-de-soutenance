@@ -11,8 +11,7 @@ Route::get('/', function () {
 
 // 🔐 Routes d'authentification avec rate limiting
 Route::get('/login', [LoginController::class, 'create'])
-    ->name('login')
-    ->middleware('throttle');
+    ->name('login');
 
 Route::post('/otp/send', [LoginController::class, 'sendOtp'])
     ->name('otp.send')
@@ -79,6 +78,11 @@ Route::prefix('intranet')->name('intranet.')->middleware([
     Route::get('/', function () {
         return view('intranet.index');
     })->name('index');
+
+    // Galerie de composants
+    Route::get('components', function () {
+        return view('intranet.components-demo');
+    })->name('components');
 
     // Routes pour les étudiants
     Route::resource('students', \App\Http\Controllers\Intranet\StudentController::class);

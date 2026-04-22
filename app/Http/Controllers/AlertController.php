@@ -37,9 +37,13 @@ class AlertController extends Controller
 
     public function apiCount(): JsonResponse
     {
+        $counts = Alert::selectRaw('SUM(CASE WHEN acknowledged = false THEN 1 ELSE 0 END) as count')
+            ->selectRaw('SUM(CASE WHEN acknowledged = false AND severity = "critical" THEN 1 ELSE 0 END) as critical')
+            ->first();
+
         return response()->json([
-            'count'    => Alert::where('acknowledged', false)->count(),
-            'critical' => Alert::where('acknowledged', false)->where('severity', 'critical')->count(),
+            'count' => (int) $counts->count,
+            'critical' => (int) $counts->critical,
         ]);
     }
 
@@ -66,7 +70,7 @@ class AlertController extends Controller
                 $iterations++;
             }
         }, 200, [
-            'Content-Type'  => 'text/event-stream',
+            'Content-Type' => 'text/event-stream',
             'Cache-Control' => 'no-cache',
             'X-Accel-Buffering' => 'no',
         ]);

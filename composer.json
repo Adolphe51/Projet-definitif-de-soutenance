@@ -1,7 +1,12 @@
 {
     "name": "cyberguard/cyberguard-platform",
     "description": "Plateforme interactive de détection, simulation et défense contre les cyberattaques",
-    "keywords": ["cybersecurity", "honeypot", "intrusion-detection", "laravel"],
+    "keywords": [
+        "cybersecurity",
+        "honeypot",
+        "intrusion-detection",
+        "laravel"
+    ],
     "license": "MIT",
     "type": "project",
     "require": {
@@ -37,6 +42,7 @@
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
+        "test": "vendor/bin/phpunit --configuration phpunit.xml.dist",
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],

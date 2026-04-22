@@ -36,10 +36,14 @@
         <ul>
             @foreach($course->enrollments as $enrollment)
                 <li>{{ $enrollment->student->first_name ?? 'Étudiant supprimé' }} {{ $enrollment->student->last_name ?? '' }} -
-                    {{ ucfirst($enrollment->status) }}</li>
+                    {{ ucfirst($enrollment->status) }}
+                </li>
             @endforeach
         </ul>
 
-        <p><a href="{{ route('intranet.courses.index') }}">Retour à la liste</a></p>
+        <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+            <a href="{{ route('intranet.courses.edit', $course) }}" class="button primary">Éditer</a>
+            <a href="{{ route('intranet.courses.index') }}" class="button secondary">Retour</a>
+        </div>
     </div>
 @endsection
