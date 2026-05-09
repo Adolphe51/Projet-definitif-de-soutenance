@@ -1,53 +1,11 @@
 /**
- * Système de thème (clair/sombre)
- */
-class ThemeManager {
-    constructor() {
-        this.THEME_KEY = 'intranet-theme';
-        this.init();
-    }
-
-    init() {
-        const saved = localStorage.getItem(this.THEME_KEY);
-        const isDark = saved === 'dark' ||
-            (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-        if (isDark) {
-            this.enable();
-        }
-
-        // Écouteur pour les changements de préférence système
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            if (e.matches) this.enable();
-            else this.disable();
-        });
-    }
-
-    enable() {
-        document.body.classList.add('dark');
-        localStorage.setItem(this.THEME_KEY, 'dark');
-    }
-
-    disable() {
-        document.body.classList.remove('dark');
-        localStorage.setItem(this.THEME_KEY, 'light');
-    }
-
-    toggle() {
-        if (document.body.classList.contains('dark')) {
-            this.disable();
-        } else {
-            this.enable();
-        }
-    }
-}
-
-/**
  * Recherche en temps réel dans les tableaux
  */
 class TableSearch {
-    constructor(tableSelector = 'table') {
-        this.table = document.querySelector(tableSelector);
+    constructor(tableOrSelector = 'table') {
+        this.table = typeof tableOrSelector === 'string'
+            ? document.querySelector(tableOrSelector)
+            : tableOrSelector;
         if (!this.table) return;
 
         this.setupSearchInput();
@@ -59,15 +17,17 @@ class TableSearch {
 
         if (!existingSearch) {
             const searchDiv = document.createElement('div');
-            searchDiv.className = 'form-group';
+            searchDiv.className = 'intranet-search-slot';
             searchDiv.innerHTML = `
-                <label for="table-search">Rechercher</label>
+                <div class="form-group">
+                    <label for="table-search">Rechercher</label>
                 <input 
                     type="text" 
                     id="table-search" 
                     class="table-search-input" 
                     placeholder="Tapez pour filtrer les résultats..."
                 >
+                </div>
             `;
 
             const firstChild = this.table.previousElementSibling || this.table;
@@ -356,28 +316,9 @@ function setupConfirmationActions(modal) {
  * Initialisation globale
  */
 document.addEventListener('DOMContentLoaded', () => {
-    // Thème
-    const themeManager = new ThemeManager();
-
-    // Ajouter un bouton de bascule du thème
-    const navButtons = document.querySelector('.intranet-nav-inner');
-    if (navButtons) {
-        const themeToggle = document.createElement('button');
-        themeToggle.id = 'theme-toggle';
-        themeToggle.className = 'button secondary';
-        themeToggle.textContent = '🌙';
-        themeToggle.title = 'Basculer le thème';
-        themeToggle.style.marginLeft = 'auto';
-        themeToggle.addEventListener('click', () => {
-            themeManager.toggle();
-            themeToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
-        });
-        navButtons.appendChild(themeToggle);
-    }
-
-    // recherche dans les tabl eaux
+    // Recherche dans les tableaux
     const tables = document.querySelectorAll('table');
-    tables.forEach(() => new TableSearch('table'));
+    tables.forEach((table) => new TableSearch(table));
 
     // Pagination côté client (optionnel - décommenter si souhaité)
     // tables.forEach(() => new ClientPagination('table', 10));
@@ -388,13 +329,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Lazy loading
     new LazyLoadManager();
-
-    // Navigation active
-    const currentUrl = window.location.href;
-    document.querySelectorAll('.intranet-nav-inner a').forEach(link => {
-        if (link.href === currentUrl) {
-            link.classList.add('active');
-        }
-    });
 });
-

@@ -1,87 +1,64 @@
-@startuml
+@startuml CyberGuardSequenceControleAcces
 autonumber
+title Sequence de controle d'acces - IP, session, role et audit
+
 actor "Utilisateur" as User
 participant "Interface Web" as UI
-participant "API Backend" as API
-participant "Service Auth" as Auth
-participant "Moteur RBAC" as RBAC
-participant "Moteur ABAC" as ABAC
-participant "Service Politique" as Policy
-participant "Base de données" as DB
-participant "Service Audit" as Audit
+participant "Middleware secure" as Secure
+participant "CheckBlockedIp" as BlockedMW
+participant "SecuritySessionMiddleware" as SessionMW
+participant "SecuritySessionService" as SessionService
+participant "CheckIpAuthorized" as IpMW
+participant "RequireRole" as RoleMW
+participant "AuditServiceWrapper" as Audit
+participant "Base de donnees" as DB
+participant "Controleur cible" as Controller
 
-' ==============================
-' DEMANDE D’ACCÈS À UNE RESSOURCE
-' ==============================
-User -> UI : Accéder à ressource (ex: /alerts)
-UI -> API : GET /alerts
+User -> UI : acceder a une ressource protegee
+UI -> Secure : requete HTTP + cookie access_token
 
-' ==============================
-' AUTHENTIFICATION
-' ==============================
-API -> Auth : Vérifier token JWT
-Auth -> DB : Vérifier session
-DB --> Auth : Session valide
+Secure -> BlockedMW : verifier IP bloquee
+alt IP bloquee
+  BlockedMW -> Audit : journaliser refus
+  BlockedMW --> UI : acces refuse
+else IP non bloquee
+  Secure -> SessionMW : valider la session
+  SessionMW -> SessionService : validateSession(token, request)
+  SessionService -> DB : lire SecuritySession + User + roles
+  DB --> SessionService : session
 
-alt Token invalide
-    Auth -> Audit : Log accès refusé
-    Auth --> API : Unauthorized
-    API --> UI : Accès refusé
-    UI --> User : Refus
-else Token valide
+  alt session absente, expiree ou invalide
+    SessionMW -> Audit : journaliser refus
+    SessionMW --> UI : redirection login / 401
+  else session valide
+    Secure -> IpMW : verifier IP autorisee
 
-    ' ==============================
-    ' RBAC (ROLE BASED)
-    ' ==============================
-    API -> RBAC : Vérifier rôle utilisateur
-    RBAC -> DB : Récupérer rôle
-    DB --> RBAC : Role = ANALYSTE
+    alt IP non autorisee
+      IpMW -> Audit : journaliser refus IP
+      IpMW --> UI : 403
+    else IP conforme
+      Secure -> RoleMW : verifier role requis
+      RoleMW -> DB : verifier user_roles
+      DB --> RoleMW : admin / compte mini site
 
-    RBAC -> RBAC : Vérifier permission
-
-    alt Rôle non autorisé
-        RBAC -> Audit : Log refus RBAC
-        RBAC --> API : Access Denied
-        API --> UI : Refus
-    else Rôle autorisé
-
-        ' ==============================
-        ' ABAC (ATTRIBUTE BASED)
-        ' ==============================
-        API -> ABAC : Vérifier attributs
-
-        ABAC -> DB : Récupérer attributs utilisateur
-        DB --> ABAC : département, niveau, etc.
-
-        ABAC -> Policy : Charger règles
-        Policy --> ABAC : Règles sécurité
-
-        ABAC -> ABAC : Évaluer :
-        note right
-          - Heure (TBAC)
-          - Adresse IP
-          - Localisation
-          - Sensibilité ressource
-        end note
-
-        alt Accès refusé (ABAC)
-            ABAC -> Audit : Log refus ABAC
-            ABAC --> API : Denied
-            API --> UI : Refus
-        else Accès autorisé
-
-            ' ==============================
-            ' ACCÈS ACCORDÉ
-            ' ==============================
-            API -> DB : Récupérer données
-            DB --> API : Résultat
-
-            API -> Audit : Log accès autorisé
-
-            API --> UI : Données
-            UI --> User : Affichage
-        end
+      alt role insuffisant
+        RoleMW -> Audit : journaliser refus role
+        RoleMW --> UI : 403
+      else role autorise
+        Secure -> Controller : transmettre la requete
+        Controller -> Audit : journaliser acces autorise
+        Controller --> UI : reponse metier
+      end
     end
+  end
 end
+
+note right of IpMW
+  Le projet combine :
+  - verification de session
+  - controle d'IP
+  - role utilisateur
+  Ce controle contextuel renforce le RBAC.
+end note
 
 @enduml

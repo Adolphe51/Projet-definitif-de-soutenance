@@ -1,191 +1,390 @@
 @extends('layouts.app')
-@section('title', 'Alertes — CyberGuard')
-@section('page-title', '🔔 Centre d\'Alertes')
-
-@push('styles')
-<style>
-.alert-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    transition: all 0.2s;
-    border-left: 3px solid transparent;
-    position: relative;
-}
-.alert-card.unread { background: var(--bg-card2); }
-.alert-card.unread::after {
-    content: 'NOUVEAU';
-    position: absolute; top: 10px; right: 12px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px; color: var(--accent-red);
-    background: rgba(255,0,64,0.1);
-    padding: 2px 6px; border-radius: 3px;
-    border: 1px solid rgba(255,0,64,0.3);
-}
-.alert-card.sev-critical { border-left-color: var(--critical); }
-.alert-card.sev-high     { border-left-color: var(--high); }
-.alert-card.sev-medium   { border-left-color: var(--medium); }
-.alert-card.sev-low      { border-left-color: var(--low); }
-.alert-icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
-.alert-body { flex: 1; }
-.alert-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-.alert-msg   { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
-.alert-meta  { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-muted); display: flex; gap: 12px; }
-.alert-actions { display: flex; gap: 6px; align-items: flex-start; flex-shrink: 0; }
-.sound-btn {
-    background: rgba(255,214,0,0.1); border: 1px solid rgba(255,214,0,0.3);
-    color: var(--accent-yellow); border-radius: 6px; padding: 5px 10px;
-    cursor: pointer; font-size: 12px; transition: all 0.2s;
-}
-.sound-btn:hover { background: rgba(255,214,0,0.2); }
-</style>
-@endpush
+@section('title', 'Alertes')
+@section('page-title', 'Centre d’alertes')
+@section('page-subtitle', 'Lecture corrélée des événements de sécurité issus de l’authentification, du mini site métier, du réseau et des simulations manuelles.')
 
 @section('content')
+    @php
+        $admin = auth()->user()?->hasRole('admin');
+        $latestAt = $summary['latestAt'] ? \Illuminate\Support\Carbon::parse($summary['latestAt']) : null;
+        $auditLabel = static function ($action) {
+            return match (true) {
+                $action === 'login_success' => 'Connexion réussie',
+                $action === 'login_failed' => 'Connexion refusée',
+                $action === 'otp_verified' => 'OTP validé',
+                $action === 'otp_failed' => 'OTP refusé',
+                str_starts_with($action, 'intranet_') => 'Action mini site',
+                str_starts_with($action, 'attack.') => 'Traitement incident',
+                str_starts_with($action, 'blocked_ip.') => 'Blocage IP',
+                default => 'Événement sécurité',
+            };
+        };
+    @endphp
 
-<!-- Stats rapides -->
-<div style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
-    @php $unread = $alerts->where('acknowledged', false)->count(); @endphp
-    <div class="stat-card" style="--accent-color:var(--accent-red); padding:14px 20px;">
-        <div class="stat-value" style="font-size:28px;">{{ $unread }}</div>
-        <div class="stat-label">Non lues</div>
-    </div>
-    <div class="stat-card" style="--accent-color:var(--accent-yellow); padding:14px 20px;">
-        <div class="stat-value" style="font-size:28px;">{{ $alerts->where('severity','critical')->count() }}</div>
-        <div class="stat-label">Critiques</div>
-    </div>
-    <div class="stat-card" style="--accent-color:var(--accent-cyan); padding:14px 20px;">
-        <div class="stat-value" style="font-size:28px;">{{ $alerts->total() }}</div>
-        <div class="stat-label">Total</div>
-    </div>
-
-    <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-        <button class="btn btn-danger" onclick="triggerManualAlarm()">
-            <i class="fas fa-volume-up"></i> Test Alarme
-        </button>
-        <button class="btn btn-primary" onclick="acknowledgeAll()">
-            <i class="fas fa-check-double"></i> Tout Marquer Lu
-        </button>
-    </div>
-</div>
-
-<!-- Live alert indicator -->
-<div id="live-alert-bar" style="
-    display:flex; align-items:center; gap:10px; padding:10px 16px;
-    background:rgba(0,229,255,0.05); border:1px solid rgba(0,229,255,0.15);
-    border-radius:8px; margin-bottom:16px;
-    font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--text-muted);
-">
-    <div style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);box-shadow:0 0 6px var(--accent-green);animation:blink 1s infinite;"></div>
-    Écoute des nouvelles alertes en temps réel...
-    <span id="new-alert-notif" style="color:var(--accent-red);"></span>
-</div>
-
-<!-- Alerts list -->
-<div id="alerts-list-container">
-    @forelse($alerts as $alert)
-    <div class="alert-card sev-{{ $alert->severity }} {{ !$alert->acknowledged ? 'unread' : '' }}" id="alert-{{ $alert->id }}">
-        <div class="alert-icon">
-            {{ $alert->severity === 'critical' ? '💀' : ($alert->severity === 'high' ? '🔴' : ($alert->severity === 'medium' ? '⚠️' : '✅')) }}
+    <section class="dashboard-hero alerts-hero">
+        <div class="dashboard-hero-copy">
+            <span class="dashboard-chip">Corrélation</span>
+            <h2>Un centre d’alertes qui raconte clairement ce qui s’est passé et pourquoi.</h2>
+            <p>
+                Les signaux issus de l’authentification, des actions du mini site, des attaques réseau
+                et des simulations manuelles sont lus ici dans une seule vue cohérente.
+            </p>
+            <div class="dashboard-actions">
+                <a href="{{ route('intranet.index') }}" class="btn btn-primary">Retour au mini site</a>
+                <a href="{{ route('dashboard') }}" class="btn btn-secondary-outline">Retour au dashboard</a>
+            </div>
         </div>
-        <div class="alert-body">
-            <div class="alert-title">{{ $alert->title }}</div>
-            <div class="alert-msg">{{ $alert->message }}</div>
-            <div class="alert-meta">
-                <span>{{ $alert->created_at->diffForHumans() }}</span>
-                <span class="badge badge-{{ $alert->severity }}">{{ $alert->severity }}</span>
-                @if($alert->type)
-                <span class="badge badge-info">{{ $alert->type }}</span>
+
+        <div class="dashboard-health {{ $summary['critical'] > 0 ? 'dashboard-health--critical' : 'dashboard-health--low' }}">
+            <div class="dashboard-health-label">Niveau d’alerte</div>
+            <div class="dashboard-health-value">{{ $summary['critical'] > 0 ? 'Priorité d’analyse élevée' : 'File d’alertes maîtrisée' }}</div>
+            <div class="dashboard-health-meta">
+                {{ $summary['critical'] }} critique(s) · {{ $summary['unread'] }} non lue(s)
+                @if($latestAt)
+                    · dernière alerte {{ $latestAt->diffForHumans() }}
                 @endif
-                @if($alert->attack_id)
-                <a href="{{ route('attacks.show', $alert->attack_id) }}" style="color:var(--accent-cyan);text-decoration:none;">
-                    Voir attaque #{{ $alert->attack_id }} →
-                </a>
+            </div>
+            <div class="dashboard-health-stats">
+                <div>
+                    <strong>{{ $summary['high'] + $summary['critical'] }}</strong>
+                    <span>priorité haute</span>
+                </div>
+                <div>
+                    <strong>{{ $summary['total'] }}</strong>
+                    <span>historique total</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="attacks-overview-grid">
+        <article class="attacks-overview-card attacks-overview-card--critical">
+            <span class="attacks-overview-label">Audits auth 24h</span>
+            <strong>{{ $summary['authAudit24h'] }}</strong>
+            <p>Connexions et validations OTP visibles pour démontrer l’entrée sécurisée.</p>
+        </article>
+        <article class="attacks-overview-card attacks-overview-card--high">
+            <span class="attacks-overview-label">Mini site 24h</span>
+            <strong>{{ $summary['intranetAudit24h'] }}</strong>
+            <p>Actions métier auditées et potentiellement corrélées à une détection.</p>
+        </article>
+        <article class="attacks-overview-card attacks-overview-card--medium">
+            <span class="attacks-overview-label">Simulations</span>
+            <strong>{{ $summary['manualSimulations'] }}</strong>
+            <p>Alertes produites volontairement dans le laboratoire de démonstration.</p>
+        </article>
+        <article class="attacks-overview-card attacks-overview-card--neutral">
+            <span class="attacks-overview-label">Détections</span>
+            <strong>{{ $summary['attackAlerts'] }}</strong>
+            <p>Alertes directement liées aux attaques collectées et analysées.</p>
+        </article>
+    </section>
+
+    <section class="card dashboard-panel">
+        <div class="section-header">
+            <div>
+                <div class="section-title">Poste de contrôle</div>
+                <p class="section-intro">Tester le son, acquitter les alertes et surveiller l’arrivée de nouveaux signaux sans génération automatique cachée.</p>
+            </div>
+
+            <div class="alerts-toolbar">
+                <button class="btn btn-warning btn-sm" onclick="triggerManualAlarm()">Test alarme</button>
+                @if($admin)
+                    <button class="btn btn-primary btn-sm" onclick="acknowledgeAll()">Tout marquer comme lu</button>
                 @endif
             </div>
         </div>
-        <div class="alert-actions">
-            <button class="sound-btn" onclick="playAlertSound('{{ $alert->severity }}')" title="Rejouer alerte sonore">
-                🔊
-            </button>
-            @if(!$alert->acknowledged)
-            <button class="btn btn-success btn-sm" onclick="acknowledgeAlert({{ $alert->id }}, this)">
-                <i class="fas fa-check"></i>
-            </button>
-            @else
-            <span style="color:var(--text-muted); font-size:20px;">✓</span>
-            @endif
-        </div>
-    </div>
-    @empty
-    <div style="text-align:center; padding:80px 20px; color:var(--text-muted);">
-        <div style="font-size:64px; margin-bottom:16px;">🔕</div>
-        <div style="font-size:18px; margin-bottom:8px;">Aucune alerte</div>
-        <div style="font-size:13px;">Le système est calme. Toutes les alertes ont été traitées.</div>
-    </div>
-    @endforelse
-</div>
 
-<!-- Pagination -->
-<div style="display:flex; justify-content:center; margin-top:20px; gap:6px;">
-    {{ $alerts->links() }}
-</div>
+        <div class="live-indicator-bar">
+            <span class="live-indicator-dot"></span>
+            <span>Écoute active des nouvelles alertes</span>
+            <span class="live-indicator-note" id="new-alert-notif">Aucune nouvelle alerte depuis le chargement.</span>
+        </div>
+    </section>
+
+    <div class="dashboard-grid">
+        <section class="card dashboard-panel">
+            <div class="section-header">
+                <div>
+                    <div class="section-title">File des alertes</div>
+                    <p class="section-intro">Chaque carte explicite la sévérité, l’origine, le contexte et l’accès direct à l’attaque liée lorsqu’elle existe.</p>
+                </div>
+            </div>
+
+            <div class="alert-list-stack" id="alerts-list-container">
+                @forelse($alerts as $alert)
+                    @php
+                        $originLabel = match (true) {
+                            $alert->type === 'simulation' => 'Simulation manuelle',
+                            $alert->type === 'honeypot' => 'Honeypot secondaire',
+                            $alert->type === 'attack' && $alert->attack?->is_simulation => 'Attaque simulée',
+                            $alert->type === 'attack' => 'Détection sécurité',
+                            $alert->type === 'system' => 'Traitement SOC',
+                            default => 'Événement sécurité',
+                        };
+                    @endphp
+                    <article class="alert-card alert-card--center sev-{{ $alert->severity }} {{ !$alert->acknowledged ? 'unread' : '' }}" id="alert-{{ $alert->id }}">
+                        <div class="alert-card-icon" aria-hidden="true">
+                            {{ $alert->severity === 'critical' ? '💀' : ($alert->severity === 'high' ? '🔴' : ($alert->severity === 'medium' ? '⚠️' : '✅')) }}
+                        </div>
+
+                        <div class="alert-card-body">
+                            <div class="alert-card-head">
+                                <div>
+                                    <div class="alert-title">{{ $alert->title }}</div>
+                                    <div class="alert-msg">{{ $alert->message }}</div>
+                                </div>
+
+                                @if(!$alert->acknowledged)
+                                    <span class="badge badge-critical alert-fresh-badge">Non lue</span>
+                                @endif
+                            </div>
+
+                            <div class="alert-card-meta">
+                                <span class="badge badge-{{ $alert->severity }}">{{ strtoupper($alert->severity) }}</span>
+                                <span class="badge badge-info">{{ $originLabel }}</span>
+                                @if($alert->type)
+                                    <span class="badge badge-primary">{{ strtoupper($alert->type) }}</span>
+                                @endif
+                                <span class="mono text-muted-small">{{ $alert->created_at->diffForHumans() }}</span>
+                                <span class="text-muted-small">{{ $alert->created_at->format('d/m/Y H:i') }}</span>
+                            </div>
+
+                            @if($alert->attack)
+                                <div class="alert-card-meta">
+                                    <span class="badge badge-{{ $alert->attack->severity }}">{{ $alert->attack->type }}</span>
+                                    <span class="text-muted-small">{{ $alert->attack->source_ip }} → {{ $alert->attack->target_ip }}</span>
+                                    @if($alert->attack->rule)
+                                        <span class="text-muted-small">Règle: {{ $alert->attack->rule->name ?? $alert->attack->rule_id }}</span>
+                                    @endif
+                                </div>
+                            @endif
+
+                            @if($alert->attack_id)
+                                <div class="alert-card-link">
+                                    <a href="{{ route('attacks.show', $alert->attack_id) }}" class="btn btn-secondary-outline btn-sm">
+                                        Consulter l’attaque liée #{{ $alert->attack_id }}
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="alert-card-actions">
+                            <button class="btn btn-secondary-outline btn-sm" onclick="playAlertSound('{{ $alert->severity }}')">Son</button>
+
+                            @if($admin)
+                                @if(!$alert->acknowledged)
+                                    <button class="btn btn-success btn-sm" onclick="acknowledgeAlert({{ $alert->id }}, this)">Acquitter</button>
+                                @else
+                                    <span class="alert-acknowledged-label">Acquittée</span>
+                                @endif
+                            @endif
+                        </div>
+                    </article>
+                @empty
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔕</div>
+                        <p class="empty-state-title">Aucune alerte active</p>
+                        <p class="empty-state-text">Les prochaines alertes apparaîtront ici lorsqu’un événement réel ou une simulation manuelle sera remonté.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            <div class="pagination-wrap">
+                {{ $alerts->links() }}
+            </div>
+        </section>
+
+        <aside class="stack-md">
+            <section class="card dashboard-panel">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Corrélation récente</div>
+                        <p class="section-intro">Ce que le système a effectivement journalisé autour des connexions, actions métier et traitements.</p>
+                    </div>
+                </div>
+
+                <div class="quick-links-grid">
+                    @forelse($recentAuditTrail as $audit)
+                        @php
+                            $badge = match ($audit->importance) {
+                                'critique' => 'critical',
+                                'elevee' => 'high',
+                                'moyenne' => 'warning',
+                                default => 'success',
+                            };
+                        @endphp
+                        <div class="quick-link-card">
+                            <strong>{{ $auditLabel($audit->action) }}</strong>
+                            <span>{{ $audit->actor?->nom ?? $audit->actor?->email ?? 'Système' }}</span>
+                            <div class="feed-title">
+                                <span class="badge badge-{{ $badge }}">{{ strtoupper($audit->importance) }}</span>
+                                <span class="mono text-muted-small">{{ $audit->created_at->diffForHumans() }}</span>
+                            </div>
+                            @if($audit->ip_address)
+                                <span class="text-muted-small">{{ $audit->ip_address }}</span>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📘</div>
+                            <p class="empty-state-title">Aucune corrélation récente</p>
+                            <p class="empty-state-text">Les audits associés à la démonstration apparaîtront ici.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </section>
+        </aside>
+    </div>
 @endsection
 
 @push('scripts')
 <script>
 async function acknowledgeAlert(id, btn) {
     btn.disabled = true;
-    await csrfFetch(`/alerts/acknowledge/${id}`, { method: 'POST' });
-    const card = document.getElementById(`alert-${id}`);
-    card.classList.remove('unread');
-    const newTag = card.querySelector('[style*="NOUVEAU"]');
-    if (newTag) newTag.remove();
-    btn.outerHTML = '<span style="color:var(--text-muted);font-size:20px;">✓</span>';
-    updateAlertCount();
+
+    try {
+        await csrfFetch(`/alerts/acknowledge/${id}`, { method: 'POST' });
+
+        const card = document.getElementById(`alert-${id}`);
+        card.classList.remove('unread');
+
+        const badge = card.querySelector('.alert-fresh-badge');
+        if (badge) {
+            badge.remove();
+        }
+
+        btn.outerHTML = '<span class="alert-acknowledged-label">Acquittée</span>';
+        updateAlertCount();
+        showToast('Alerte acquittée.', 'success', 2500);
+    } catch (error) {
+        btn.disabled = false;
+        showToast('Impossible d’acquitter cette alerte.', 'error');
+    }
 }
 
 async function acknowledgeAll() {
-    await csrfFetch('/alerts/clear-all', { method: 'POST' });
-    document.querySelectorAll('.alert-card.unread').forEach(c => {
-        c.classList.remove('unread');
-    });
-    showToast('✅ Toutes lues', 'Toutes les alertes ont été marquées comme lues.', 'low');
-    updateAlertCount();
+    try {
+        await csrfFetch('/alerts/clear-all', { method: 'POST' });
+
+        document.querySelectorAll('.alert-card.unread').forEach(card => {
+            card.classList.remove('unread');
+            card.querySelector('.alert-fresh-badge')?.remove();
+
+            const actionSlot = card.querySelector('.alert-card-actions');
+            const button = actionSlot?.querySelector('.btn-success');
+
+            if (button) {
+                button.outerHTML = '<span class="alert-acknowledged-label">Acquittée</span>';
+            }
+        });
+
+        updateAlertCount();
+        showToast('Toutes les alertes ont été marquées comme lues.', 'success');
+    } catch (error) {
+        showToast('La mise à jour globale a échoué.', 'error');
+    }
 }
 
 function updateAlertCount() {
     const remaining = document.querySelectorAll('.alert-card.unread').length;
-    document.getElementById('topbar-alert-count').textContent = remaining;
-    document.getElementById('nav-alert-count').textContent    = remaining;
+    const topbar = document.getElementById('topbar-alert-count');
+    const nav = document.getElementById('nav-alert-count');
+
+    if (topbar) {
+        topbar.textContent = remaining;
+    }
+
+    if (nav) {
+        nav.textContent = remaining;
+    }
+}
+
+let alertAudioContext = null;
+
+function getAlertAudioContext() {
+    if (!alertAudioContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+        if (!AudioContextClass) {
+            return null;
+        }
+
+        alertAudioContext = new AudioContextClass();
+    }
+
+    if (alertAudioContext.state === 'suspended') {
+        alertAudioContext.resume();
+    }
+
+    return alertAudioContext;
+}
+
+function playTone(frequency, duration, volume) {
+    const context = getAlertAudioContext();
+
+    if (!context) {
+        return;
+    }
+
+    const oscillator = context.createOscillator();
+    const gainNode = context.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(frequency, context.currentTime);
+    gainNode.gain.setValueAtTime(volume, context.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(context.destination);
+
+    oscillator.start();
+    oscillator.stop(context.currentTime + duration);
 }
 
 function playAlertSound(severity) {
-    initAudio();
-    const freq = severity === 'critical' ? 880 : severity === 'high' ? 660 : 440;
-    playBeep(freq, 0.3, 'sawtooth', 0.3);
-    setTimeout(() => playBeep(freq * 1.2, 0.2, 'sawtooth', 0.2), 350);
+    const presets = {
+        critical: [[880, 0.18, 0.22], [660, 0.16, 0.18], [990, 0.22, 0.2]],
+        high: [[760, 0.16, 0.18], [620, 0.14, 0.16]],
+        medium: [[640, 0.14, 0.12]],
+        low: [[520, 0.12, 0.1]],
+    };
+
+    (presets[severity] || presets.low).forEach(([frequency, duration, volume], index) => {
+        setTimeout(() => playTone(frequency, duration, volume), index * 140);
+    });
 }
 
-// Polling nouvelles alertes
+function triggerManualAlarm() {
+    ['critical', 'high', 'medium'].forEach((severity, index) => {
+        setTimeout(() => playAlertSound(severity), index * 240);
+    });
+    showToast('Test alarme déclenché.', 'warning');
+}
+
 let lastAlertId = {{ $alerts->first()?->id ?? 0 }};
-setInterval(async () => {
+
+async function pollUnreadAlerts() {
     try {
-        const res  = await fetch('/alerts/unread');
-        const data = await res.json();
+        const response = await fetch('/alerts/unread');
+        const data = await response.json();
+
+        const note = document.getElementById('new-alert-notif');
+        if (!note) {
+            return;
+        }
+
         if (data.count > 0 && data.alerts[0]?.id > lastAlertId) {
             lastAlertId = data.alerts[0].id;
-            document.getElementById('new-alert-notif').textContent = `⚡ ${data.count} nouvelle(s) alerte(s) — `;
-            const link = document.createElement('a');
-            link.href = '/alerts'; link.style.color = 'var(--accent-cyan)'; link.textContent = 'Actualiser';
-            document.getElementById('new-alert-notif').appendChild(link);
+            note.innerHTML = `${data.count} nouvelle(s) alerte(s) détectée(s). <a href="/alerts">Actualiser</a>`;
+        } else {
+            note.textContent = 'Aucune nouvelle alerte depuis le chargement.';
         }
-    } catch(e) {}
-}, 6000);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+setInterval(pollUnreadAlerts, 8000);
 </script>
 @endpush

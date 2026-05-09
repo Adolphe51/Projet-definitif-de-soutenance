@@ -1,0 +1,59 @@
+@startuml
+title Diagramme d'activite - Traitement d'un incident SOC
+skinparam shadowing false
+
+start
+
+:Une attaque est detectee\nou produite par simulation manuelle;
+:Creation de l'entite Attack;
+:Creation de l'alerte associee;
+:Affichage dans dashboard,\nalertes et liste des incidents;
+
+if (Severite elevee\nou regle critique ?) then (Oui)
+  :Prioriser l'analyse;
+else (Non)
+  :Garder l'incident en surveillance;
+endif
+
+if (Seuil d'auto-blocage atteint ?) then (Oui)
+  :Creer ou mettre a jour BlockedIp;
+  :Passer l'attaque a blocked;
+  :Creer une alerte systeme;
+else (Non)
+  :Laisser le statut a detected;
+endif
+
+:Ouverture de la fiche incident\npar l'administrateur;
+
+if (Investigation necessaire ?) then (Oui)
+  :Passer le statut a investigating;
+  :Ajouter un commentaire SOC;
+  :Consulter la regle,\nle contexte et la source;
+else (Non)
+endif
+
+if (Faux positif ?) then (Oui)
+  :Passer le statut a false_positive;
+  :Tracer la decision;
+  stop
+else (Non)
+endif
+
+if (Blocage manuel necessaire ?) then (Oui)
+  :Bloquer l'IP source;
+  :Maintenir ou passer le statut a blocked;
+  :Tracer l'action SOC;
+else (Non)
+endif
+
+if (Incident resolu ?) then (Oui)
+  :Passer le statut a resolved;
+  :Cloturer l'incident;
+  :Conserver la trace dans\nattack_comments et audit_logs;
+  stop
+else (Non)
+  :Poursuivre l'investigation;
+  stop
+endif
+
+@enduml

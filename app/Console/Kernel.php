@@ -12,37 +12,23 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Auto-génération d'attaques de démo toutes les minutes (mode démo)
-        if (config('cyberguard.detection.demo_mode', true)) {
-            $schedule->command('cyberguard:detect --count=3')
-                     ->everyMinute()
-                     ->withoutOverlapping()
-                     ->runInBackground();
-        }
-
-        // Auto-blocage des IPs suspectes toutes les 5 minutes
+        // Auto-blocage des IPs suspectes toutes les 5 minutes (toujours actif)
         $schedule->command('cyberguard:autoblock')
                  ->everyFiveMinutes()
                  ->withoutOverlapping()
                  ->runInBackground();
 
-        // Simulation d'interactions honeypot toutes les 2 minutes
-        if (config('cyberguard.honeypot.enabled', true)) {
-            $schedule->command('cyberguard:honeypot simulate --count=2')
-                     ->everyTwoMinutes()
-                     ->withoutOverlapping()
-                     ->runInBackground();
-        }
-
-        // Nettoyage des vieilles attaques (garder 30 jours)
+        // Nettoyage des vieilles attaques (toujours actif - maintenance)
         $schedule->command('cyberguard:cleanup --days=30')
                  ->daily()
                  ->at('03:00');
 
-        // Rapport journalier
-        $schedule->command('cyberguard:honeypot report')
-                 ->dailyAt('08:00')
-                 ->emailOutputTo(config('cyberguard.honeypot.alert_email'));
+        // Rapport journalier (avec email si configuré)
+        if (config('cyberguard.honeypot.alert_email')) {
+            $schedule->command('cyberguard:honeypot report')
+                     ->dailyAt('08:00')
+                     ->emailOutputTo(config('cyberguard.honeypot.alert_email'));
+        }
     }
 
     /**

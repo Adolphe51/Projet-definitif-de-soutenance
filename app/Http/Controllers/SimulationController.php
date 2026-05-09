@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Simulation;
 use App\Models\Attack;
+use App\Models\Simulation;
 use App\Services\AttackDetectionService;
-use App\Services\GeoService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -14,14 +13,16 @@ class SimulationController extends Controller
     public function index()
     {
         $simulations = Simulation::orderByDesc('created_at')->get();
-        $types = Attack::attackTypes();
+        $types = AttackDetectionService::supportedAttackTypes();
         return view('simulations.index', compact('simulations', 'types'));
     }
 
     public function launch(Request $request): JsonResponse
     {
+        $types = AttackDetectionService::supportedAttackTypes();
+
         $request->validate([
-            'attack_type' => 'required|string',
+            'attack_type' => 'required|string|in:' . implode(',', $types),
             'target_ip'   => 'required|ip',
             'duration'    => 'required|integer|min:5|max:120',
             'intensity'   => 'required|in:low,medium,high',
@@ -78,16 +79,32 @@ class SimulationController extends Controller
             }
         }
 
-        // Génère une attaque de simulation
-        $attack = AttackDetectionService::generateAttack(true);
+        $sim = $simId ? Simulation::find($simId) : null;
+        $ruleId = $sim ? AttackDetectionService::ruleIdForAttackType($sim->attack_type) : null;
 
-        if ($simId) {
+        if (!$ruleId) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Type de simulation non supporté dans le périmètre actuel.',
+            ], 422);
+        }
+
+        $attack = AttackDetectionService::generateAttackByRule($ruleId, [
+            'is_simulation' => true,
+            'target_ip' => $sim->target_ip,
+        ]);
+
+        if (!$attack) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Impossible de générer l’attaque demandée.',
+            ], 500);
+        }
+
+        if ($sim) {
             $packetsMap = ['low' => 100, 'medium' => 500, 'high' => 2000];
-            $sim = Simulation::find($simId);
-            if ($sim) {
-                $intensity = $sim->intensity ?? 'medium';
-                $sim->increment('packets_sent', $packetsMap[$intensity] ?? 500);
-            }
+            $intensity = $sim->intensity ?? 'medium';
+            $sim->increment('packets_sent', $packetsMap[$intensity] ?? 500);
         }
 
         return response()->json([

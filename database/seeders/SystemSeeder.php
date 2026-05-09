@@ -16,7 +16,10 @@ class SystemSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // Admin
+        UserRole::where('role', 'analyst')->delete();
+        User::where('email', 'analyst@univ.dz')->delete();
+
+        // Admin démonstration
         $admin = User::firstOrCreate(
             ['email' => 'admin@gmail.com'],
             [
@@ -32,22 +35,23 @@ class SystemSeeder extends Seeder
             'role' => AppRole::Admin->value,
         ]);
 
-        // Secrétaire
-        $analyst = User::firstOrCreate(
-            ['email' => 'analyst@univ.dz'],
+        // Compte mini site démonstration
+        $miniSiteUser = User::firstOrCreate(
+            ['email' => 'metier@gmail.com'],
             [
-                'nom' => 'Benali Fatima',
-                'password' => Hash::make('Secret@123'),
+                'nom' => 'Compte Mini Site',
+                'password' => Hash::make('Metier@123'),
                 'is_active' => true,
                 'uuid' => Str::uuid(),
                 'created_at' => $now,
             ]
         );
-        UserRole::firstOrCreate([
-            'user_id' => $analyst->id,
-            'role' => AppRole::Analyst->value,
-        ]);
+        UserRole::where('user_id', $miniSiteUser->id)
+            ->where('role', '!=', AppRole::Admin->value)
+            ->delete();
 
-        $this->command->info('✅ 2 utilisateurs créés (admin, analyst)');
+        $this->command->info('✅ Comptes de démonstration prêts :');
+        $this->command->line('   - Admin   : admin@gmail.com / Admin@123');
+        $this->command->line('   - Mini site : metier@gmail.com / Metier@123');
     }
 }

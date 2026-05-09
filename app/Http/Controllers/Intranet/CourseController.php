@@ -42,7 +42,7 @@ class CourseController extends Controller
 
         event(new IntranetDataChanged('course', 'create', $course->toArray()));
 
-        return Redirect::route('intranet.courses.index')->with('success', 'Cours créé avec succès.');
+        return Redirect::route('intranet.courses.index')->with('success', 'Service créé avec succès.');
     }
 
     public function show(string $id)
@@ -78,7 +78,7 @@ class CourseController extends Controller
 
         event(new IntranetDataChanged('course', 'update', $course->toArray()));
 
-        return Redirect::route('intranet.courses.index')->with('success', 'Cours mis à jour.');
+        return Redirect::route('intranet.courses.index')->with('success', 'Service mis à jour.');
     }
 
     public function destroy(string $id)
@@ -89,6 +89,6 @@ class CourseController extends Controller
 
         event(new IntranetDataChanged('course', 'delete', ['id' => $id]));
 
-        return Redirect::route('intranet.courses.index')->with('success', 'Cours supprimé.');
+        return Redirect::route('intranet.courses.index')->with('success', 'Service supprimé.');
     }
 }

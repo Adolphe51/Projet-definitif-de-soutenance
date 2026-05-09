@@ -1,0 +1,24 @@
+\babel@toc {french}{}\relax 
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Diagramme de cas d'utilisation global - CyberGuard}}{28}{figure.caption.12}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Diagramme de cas d'utilisation côté administrateur - CyberGuard}}{29}{figure.caption.13}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Diagramme de cas d'utilisation côté utilisateur - CyberGuard}}{30}{figure.caption.14}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Diagramme de classes - CyberGuard}}{33}{figure.caption.18}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Diagramme de classes - CyberGuard}}{34}{figure.caption.19}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Diagramme de déploiement - CyberGuard}}{34}{figure.caption.20}%
+\contentsline {figure}{\numberline {3.7}{\ignorespaces Séquence d'authentification - Email / mot de passe / OTP / session sécurisée - CyberGuard}}{35}{figure.caption.21}%
+\contentsline {figure}{\numberline {3.8}{\ignorespaces Séquence generale - mini site éetier, audit, détection, alerte et analyse SOC - CyberGuard}}{35}{figure.caption.22}%
+\contentsline {figure}{\numberline {3.9}{\ignorespaces Séquence de controle d'accès - IP, session, role et audit - CyberGuard}}{36}{figure.caption.23}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Vue connexion email + mot de passe - CyberGuard}}{39}{figure.caption.24}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Vue connexion email + OTP - CyberGuard}}{39}{figure.caption.25}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Vue tableau de bord de supervision - CyberGuard}}{39}{figure.caption.26}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Vue centre d'alertes - CyberGuard}}{40}{figure.caption.27}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Vue gestion incidents - CyberGuard}}{40}{figure.caption.28}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Vue mini site - CyberGuard}}{40}{figure.caption.29}%
+\contentsline {figure}{\numberline {4.7}{\ignorespaces Vue mini site usagers - CyberGuard}}{41}{figure.caption.30}%
+\contentsline {figure}{\numberline {4.8}{\ignorespaces Vue mini site services - CyberGuard}}{41}{figure.caption.31}%
+\contentsline {figure}{\numberline {4.9}{\ignorespaces Vue mini site messages - CyberGuard}}{41}{figure.caption.32}%
+\addvspace {10\p@ }

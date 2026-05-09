@@ -4,9 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\Attack;
 use App\Models\BlockedIp;
-use App\Models\Alert;
+use App\Services\AutoBlockService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 class AutoBlockCommand extends Command
 {
@@ -17,6 +16,12 @@ class AutoBlockCommand extends Command
 
     protected $description = 'Détecte et bloque automatiquement les IPs suspectes';
 
+    public function __construct(
+        private readonly AutoBlockService $autoBlockService,
+    ) {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
         $threshold = (int) $this->option('threshold');
@@ -25,10 +30,12 @@ class AutoBlockCommand extends Command
 
         $this->info("🔍 Analyse des IPs suspectes (seuil: {$threshold} attaques en {$window} min)...");
 
-        $suspiciousIps = Attack::selectRaw('source_ip, COUNT(*) as cnt, MAX(severity) as max_severity, MAX(created_at) as last_seen')
+        $suspiciousIps = Attack::selectRaw('source_ip, COALESCE(rule_id, type) as signature, COUNT(*) as cnt, MAX(severity) as max_severity, MAX(created_at) as last_seen')
             ->where('created_at', '>=', now()->subMinutes($window))
             ->where('status', '!=', 'blocked')
+            ->where('is_simulation', false)
             ->groupBy('source_ip')
+            ->groupBy('signature')
             ->havingRaw('COUNT(*) >= ?', [$threshold])
             ->orderByDesc('cnt')
             ->get();
@@ -42,25 +49,35 @@ class AutoBlockCommand extends Command
 
         $headers = ['IP', 'Attaques', 'Sévérité Max', 'Dernière vue', 'Action'];
         $rows    = [];
+        $blockedCount = 0;
 
         foreach ($suspiciousIps as $suspect) {
             $alreadyBlocked = BlockedIp::isBlocked($suspect->source_ip);
-            $action         = $alreadyBlocked ? 'Déjà bloquée' : ($dryRun ? '[DRY-RUN] Bloquerait' : 'BLOQUÉE');
+            $allowlisted = $this->autoBlockService->isAllowlisted($suspect->source_ip);
+            $action = $alreadyBlocked
+                ? 'Déjà bloquée'
+                : ($allowlisted ? 'Allowlist' : ($dryRun ? '[DRY-RUN] Bloquerait' : 'BLOQUÉE'));
 
-            if (!$alreadyBlocked && !$dryRun) {
-                BlockedIp::blockIp(
-                    $suspect->source_ip,
-                    "Auto-bloqué: {$suspect->cnt} attaques en {$window} min"
-                );
+            if (!$alreadyBlocked && !$allowlisted) {
+                $latestAttack = Attack::query()
+                    ->where('source_ip', $suspect->source_ip)
+                    ->where(function ($query) use ($suspect) {
+                        $query->where('rule_id', $suspect->signature)
+                            ->orWhere('type', $suspect->signature);
+                    })
+                    ->orderByDesc('created_at')
+                    ->first();
 
-                Attack::where('source_ip', $suspect->source_ip)->update(['status' => 'blocked']);
+                if ($latestAttack && !$dryRun) {
+                    $blocked = $this->autoBlockService->evaluateAttack($latestAttack, 'scheduler', [
+                        'threshold_count' => $threshold,
+                        'window_minutes' => $window,
+                    ]);
 
-                Alert::create([
-                    'title'    => "🤖 AUTO-BLOCAGE: {$suspect->source_ip}",
-                    'message'  => "{$suspect->cnt} attaques détectées en {$window} min — IP bloquée automatiquement.",
-                    'severity' => 'high',
-                    'type'     => 'system',
-                ]);
+                    if ($blocked) {
+                        $blockedCount++;
+                    }
+                }
             }
 
             $rows[] = [
@@ -75,7 +92,7 @@ class AutoBlockCommand extends Command
         $this->table($headers, $rows);
 
         if (!$dryRun) {
-            $this->info("✅ " . $suspiciousIps->where(fn($s) => !BlockedIp::isBlocked($s->source_ip))->count() . " IP(s) bloquée(s).");
+            $this->info("✅ {$blockedCount} IP(s) bloquée(s).");
         }
 
         return Command::SUCCESS;

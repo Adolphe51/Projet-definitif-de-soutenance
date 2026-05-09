@@ -44,7 +44,7 @@
             <!-- Submit Button -->
             <button type="submit" class="auth-button">
                 <div class="spinner"></div>
-                <span>Authentifier et accéder au tableau de bord</span>
+                <span>Authentifier et ouvrir l’espace autorisé</span>
             </button>
         </form>
 

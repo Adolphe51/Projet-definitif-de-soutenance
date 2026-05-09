@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\BlockedIp;
+use App\Services\AutoBlockService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -11,9 +12,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckBlockedIp
 {
+    public function __construct(
+        private readonly AutoBlockService $autoBlockService,
+    ) {
+    }
+
     /**
      * Bloque les IPs listées dans la table blocked_ips.
-     * Exclut les routes d'administration /dashboard, /attacks, etc.
+     * Autorise uniquement les admins authentifiés ou les IPs de confiance
+     * à accéder à l'interface CyberGuard lorsqu'une IP est bloquée.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -32,15 +39,11 @@ class CheckBlockedIp
             );
         }
 
-        // Ne pas bloquer les accès à l'interface admin CyberGuard
-        $adminPaths = ['dashboard', 'attacks', 'simulations', 'alerts', 'honeypot', 'geo', 'api'];
-        foreach ($adminPaths as $p) {
-            if (str_starts_with($request->path(), $p)) {
+        if (BlockedIp::isBlocked($ip)) {
+            if ($this->autoBlockService->canBypassBlockedIpForAdmin($request)) {
                 return $next($request);
             }
-        }
 
-        if (BlockedIp::isBlocked($ip)) {
             return $this->buildBlockedResponse(
                 $request,
                 'Your IP address has been blocked.',

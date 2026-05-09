@@ -5,11 +5,14 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
-                'resources/css/app.css', 
+                'resources/css/app.css',
+                'resources/css/intranet.css',
+                'resources/css/components.css',
                 'resources/js/app.js',
+                'resources/js/intranet.js',
                 'resources/css/auth.css',
                 'resources/js/auth.js',
-                'resources/js/dash.js'
+                'resources/js/dash.js',
             ],
             refresh: true,
         }),

@@ -14,19 +14,9 @@ Artisan::command('inspire', function () {
 |--------------------------------------------------------------------------
 */
 
-// Auto-génération d'attaques de démo (toutes les minutes)
-Schedule::command('cyberguard:detect --count=3')
-    ->everyMinute()
-    ->withoutOverlapping();
-
 // Auto-blocage IPs suspectes (toutes les 5 minutes)
 Schedule::command('cyberguard:autoblock')
     ->everyFiveMinutes()
-    ->withoutOverlapping();
-
-// Simulation honeypot (toutes les 2 minutes)
-Schedule::command('cyberguard:honeypot simulate --count=1')
-    ->everyTwoMinutes()
     ->withoutOverlapping();
 
 // Nettoyage quotidien à 3h

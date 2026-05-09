@@ -25,23 +25,13 @@ class Course extends Model
         'status'
     ];
 
-    protected $casts = [
-        // Pas de is_active dans la migration, on utilise status
-    ];
-
     // Relations
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class);
     }
 
-    public function resources()
-    {
-        return $this->hasMany(Resource::class);
-    }
-
     // Scopes
-    // 🔐 CORRECTION : Utiliser 'status' au lieu de 'is_active' (cohérent avec la migration)
     public function scopeActive($query)
     {
         return $query->where('status', 'active');

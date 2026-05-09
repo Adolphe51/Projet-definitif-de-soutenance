@@ -1,373 +1,313 @@
 @extends('layouts.app')
-@section('title', 'Détection Live — CyberGuard')
-@section('page-title', '📡 Détection en Temps Réel')
-
-@push('styles')
-<style>
-.live-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
-
-.attack-stream {
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
-}
-
-.attack-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
-    margin-bottom: 8px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    transition: all 0.3s;
-    cursor: pointer;
-    animation: rowAppear 0.4s ease-out;
-}
-
-@keyframes rowAppear {
-    from { opacity: 0; transform: translateX(-20px); }
-    to   { opacity: 1; transform: translateX(0); }
-}
-
-.attack-row:hover { border-color: var(--border-glow); transform: translateX(3px); }
-.attack-row.critical { border-left: 3px solid var(--critical); animation: rowAppear 0.4s ease-out, rowFlash 0.5s ease-in-out 3; }
-.attack-row.high     { border-left: 3px solid var(--high); }
-.attack-row.medium   { border-left: 3px solid var(--medium); }
-.attack-row.low      { border-left: 3px solid var(--low); }
-
-@keyframes rowFlash {
-    0%,100% { background: var(--bg-card); }
-    50%      { background: rgba(255,0,64,0.08); }
-}
-
-.attack-type-icon { font-size: 24px; flex-shrink: 0; }
-
-.attack-info { flex: 1; min-width: 0; }
-.attack-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-.attack-meta  { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; }
-
-.attack-stats { text-align: right; flex-shrink: 0; }
-.attack-stats .packets { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: var(--accent-cyan); }
-.attack-stats .bw      { font-size: 11px; color: var(--text-muted); }
-
-.side-panel { display: flex; flex-direction: column; gap: 16px; }
-
-.mini-map-placeholder {
-    height: 200px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.radar {
-    width: 160px; height: 160px;
-    border-radius: 50%;
-    border: 2px solid rgba(0,229,255,0.3);
-    position: relative;
-    display: flex; align-items: center; justify-content: center;
-}
-
-.radar::before, .radar::after {
-    content: '';
-    position: absolute;
-    border-radius: 50%;
-    border: 1px solid rgba(0,229,255,0.2);
-}
-.radar::before { width: 70%; height: 70%; }
-.radar::after  { width: 40%; height: 40%; }
-
-.radar-sweep {
-    position: absolute;
-    width: 50%; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent-cyan));
-    transform-origin: left center;
-    top: 50%; left: 50%;
-    animation: sweep 2s linear infinite;
-}
-
-@keyframes sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-.radar-dot {
-    position: absolute;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    animation: dotPulse 1s ease-in-out infinite;
-}
-
-@keyframes dotPulse { 0%,100%{transform:scale(1); opacity:1;} 50%{transform:scale(2); opacity:0.5;} }
-
-.counter-box {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
-}
-
-.counter-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(26,58,92,0.4);
-    font-size: 13px;
-}
-
-.counter-row:last-child { border-bottom: none; }
-.counter-val { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; }
-
-.live-indicator {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 14px;
-    background: rgba(255,0,64,0.1);
-    border: 1px solid rgba(255,0,64,0.3);
-    border-radius: 6px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
-    color: var(--accent-red);
-    margin-bottom: 16px;
-}
-
-.live-dot {
-    width: 8px; height: 8px;
-    background: var(--accent-red);
-    border-radius: 50%;
-    animation: blink 0.8s ease-in-out infinite;
-    box-shadow: 0 0 8px var(--accent-red);
-}
-
-.filter-bar {
-    display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
-}
-
-.filter-btn {
-    padding: 5px 12px;
-    border-radius: 5px;
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-    color: var(--text-muted);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.filter-btn.active, .filter-btn:hover {
-    border-color: var(--accent-cyan);
-    color: var(--accent-cyan);
-    background: rgba(0,229,255,0.08);
-}
-</style>
-@endpush
+@section('title', 'Détection live')
+@section('page-title', 'Centre live')
+@section('page-subtitle', 'Vue temps réel des attaques détectées avec filtrage rapide, compteurs instantanés et action immédiate sur le dernier attaquant.')
 
 @section('content')
-<div class="live-indicator">
-    <div class="live-dot"></div>
-    SURVEILLANCE EN DIRECT — Mise à jour toutes les 3 secondes
-    <span id="attack-counter-display" style="margin-left: auto; color: var(--accent-cyan);">0 attaques reçues</span>
-</div>
-
-<div class="live-grid">
-    <!-- Stream principal -->
-    <div>
-        <div class="section-header">
-            <div class="section-title">Flux d'Attaques</div>
-            <div class="filter-bar">
-                <button class="filter-btn active" onclick="filterSeverity('all', this)">Toutes</button>
-                <button class="filter-btn" onclick="filterSeverity('critical', this)" style="color:var(--critical)">Critiques</button>
-                <button class="filter-btn" onclick="filterSeverity('high', this)" style="color:var(--high)">Élevées</button>
-                <button class="filter-btn" onclick="filterSeverity('medium', this)" style="color:var(--medium)">Moyennes</button>
-                <button class="filter-btn" onclick="filterSeverity('low', this)" style="color:var(--low)">Faibles</button>
+    <section class="dashboard-hero">
+        <div class="dashboard-hero-copy">
+            <span class="dashboard-chip">Surveillance en direct</span>
+            <h2>Une lecture instantanée du flux d’attaques, sans repasser par le dashboard.</h2>
+            <p>
+                Cette page sert à suivre la détection en continu, filtrer les niveaux de gravité
+                et ouvrir rapidement la fiche d’un incident dès qu’un événement ressort du lot.
+            </p>
+            <div class="dashboard-actions">
+                <a href="{{ route('attacks.index') }}" class="btn btn-primary">Retour aux incidents</a>
+                <a href="{{ route('geo.attackers') }}" class="btn btn-secondary-outline">Vue géographique</a>
             </div>
         </div>
 
-        <div class="attack-stream" id="attack-stream">
-            <div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
-                <div style="font-size:48px; margin-bottom:16px; animation: blink 1s infinite;">📡</div>
-                <div style="font-family:'Share Tech Mono',monospace;">En attente d'attaques...</div>
+        <div class="dashboard-health dashboard-health--medium">
+            <div class="dashboard-health-label">Flux live</div>
+            <div class="dashboard-health-value">Mise à jour toutes les 3 secondes</div>
+            <div class="dashboard-health-meta">
+                Le flux se met à jour automatiquement et met en avant le dernier événement détecté.
             </div>
+            <div class="dashboard-health-stats">
+                <div>
+                    <strong id="geo-total">0</strong>
+                    <span>événements visibles</span>
+                </div>
+                <div>
+                    <strong id="c-packets">0</strong>
+                    <span>paquets / cycle</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="attacks-overview-grid">
+        <article class="attacks-overview-card attacks-overview-card--neutral">
+            <span class="attacks-overview-label">Total</span>
+            <strong id="c-total">0</strong>
+            <p>Volume global retourné par l’API live.</p>
+        </article>
+        <article class="attacks-overview-card attacks-overview-card--critical">
+            <span class="attacks-overview-label">Critiques</span>
+            <strong id="c-critical">0</strong>
+            <p>Attaques nécessitant la plus forte vigilance.</p>
+        </article>
+        <article class="attacks-overview-card attacks-overview-card--high">
+            <span class="attacks-overview-label">Élevées</span>
+            <strong id="c-high">0</strong>
+            <p>Incidents qui peuvent rapidement monter en pression.</p>
+        </article>
+        <article class="attacks-overview-card attacks-overview-card--medium">
+            <span class="attacks-overview-label">État</span>
+            <strong id="attack-counter-display">0</strong>
+            <p>Compteur synthétique du flux reçu.</p>
+        </article>
+    </section>
+
+    <section class="card dashboard-panel">
+        <div class="live-indicator-bar">
+            <span class="live-indicator-dot"></span>
+            <span>Surveillance en direct activée</span>
+            <span class="live-indicator-note">Le flux est rafraîchi automatiquement toutes les 3 secondes.</span>
+        </div>
+    </section>
+
+    <div class="live-layout-grid">
+        <section class="card dashboard-panel live-stream-shell">
+            <div class="section-header">
+                <div>
+                    <div class="section-title">Flux d’attaques</div>
+                    <p class="section-intro">Filtre le niveau de sévérité puis ouvre la fiche d’un incident en un clic.</p>
+                </div>
+            </div>
+
+            <div class="live-toolbar">
+                <div class="live-filter-bar">
+                    <button class="live-filter-btn active" onclick="filterSeverity('all', this)">Toutes</button>
+                    <button class="live-filter-btn" onclick="filterSeverity('critical', this)">Critiques</button>
+                    <button class="live-filter-btn" onclick="filterSeverity('high', this)">Élevées</button>
+                    <button class="live-filter-btn" onclick="filterSeverity('medium', this)">Moyennes</button>
+                    <button class="live-filter-btn" onclick="filterSeverity('low', this)">Faibles</button>
+                </div>
+            </div>
+
+            <div class="live-stream" id="attack-stream">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📡</div>
+                    <p class="empty-state-title">En attente d’attaques</p>
+                    <p class="empty-state-text">Les nouvelles détections apparaîtront ici dès le prochain cycle live.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="live-side-stack">
+            <section class="live-radar-shell">
+                <div class="section-title section-title--spaced">Radar live</div>
+                <div class="live-radar-box">
+                    <div class="live-radar">
+                        <div class="live-radar-sweep"></div>
+                        <div id="radar-dots"></div>
+                        <div class="live-radar-label">RADAR</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="live-counter-shell">
+                <div class="section-title section-title--spaced">Dernier attaquant</div>
+                <div id="last-attack-content" class="summary-empty">Aucune attaque reçue pour le moment.</div>
+                <div class="dashboard-actions" style="margin-top: 1rem;">
+                    <button class="btn btn-danger btn-center" style="width: 100%;" onclick="blockLastAttacker()">
+                        Bloquer le dernier attaquant
+                    </button>
+                </div>
+            </section>
         </div>
     </div>
-
-    <!-- Panneau latéral -->
-    <div class="side-panel">
-        <!-- Radar -->
-        <div class="mini-map-placeholder">
-            <div class="radar">
-                <div class="radar-sweep"></div>
-                <div id="radar-dots"></div>
-                <div style="font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--accent-cyan); z-index:1;">RADAR</div>
-            </div>
-        </div>
-
-        <!-- Compteurs -->
-        <div class="counter-box">
-            <div style="font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text-muted); margin-bottom:8px; letter-spacing:1px;">COMPTEURS EN DIRECT</div>
-            <div class="counter-row">
-                <span>💀 Total</span>
-                <span class="counter-val" id="c-total" style="color:var(--accent-cyan);">0</span>
-            </div>
-            <div class="counter-row">
-                <span>🔴 Critiques</span>
-                <span class="counter-val" id="c-critical" style="color:var(--critical);">0</span>
-            </div>
-            <div class="counter-row">
-                <span>🟡 Élevées</span>
-                <span class="counter-val" id="c-high" style="color:var(--high);">0</span>
-            </div>
-            <div class="counter-row">
-                <span>⚡ Paquets/s</span>
-                <span class="counter-val" id="c-packets" style="color:var(--accent-green);">0</span>
-            </div>
-        </div>
-
-        <!-- Dernière attaque détectée -->
-        <div class="card" id="last-attack-card">
-            <div style="font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text-muted); margin-bottom:12px;">DERNIÈRE ATTAQUE</div>
-            <div id="last-attack-content" style="color:var(--text-muted); font-size:13px;">Aucune attaque reçue</div>
-        </div>
-
-        <!-- Bouton bloquer -->
-        <button class="btn btn-danger" style="justify-content:center; width:100%;" onclick="blockLastAttacker()">
-            <i class="fas fa-ban"></i> Bloquer Dernier Attaquant
-        </button>
-    </div>
-</div>
 @endsection
 
 @push('scripts')
 <script>
-let attackCount   = 0;
-let critCount     = 0;
-let highCount     = 0;
-let lastAttackId  = null;
+let attackCount = 0;
+let critCount = 0;
+let highCount = 0;
+let lastAttackId = null;
 let currentFilter = 'all';
-let allAttacks    = [];
+let allAttacks = [];
+let liveAudioContext = null;
 
-async function fetchLiveAttacks() {
-    try {
-        const res  = await fetch('/api/live-attacks');
-        const data = await res.json();
+function getLiveAudioContext() {
+    if (!liveAudioContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 
-        attackCount = data.total;
-        critCount   = data.critical;
-        document.getElementById('attack-counter-display').textContent = `${attackCount} attaques`;
-        document.getElementById('c-total').textContent    = attackCount;
-        document.getElementById('c-critical').textContent = critCount;
-
-        allAttacks = data.attacks;
-        renderAttacks(allAttacks);
-        updateRadar(data.attacks.slice(0, 8));
-
-        if (data.new_attack) {
-            const a = data.new_attack;
-            if (a.alarm && (a.severity === 'critical' || a.severity === 'high')) {
-                if (!alarmActive) {
-                    triggerAlarm(a.severity);
-                    showToast(`${a.severity === 'critical' ? '💀' : '🔴'} ${a.type}`, `${a.ip} → ${a.country}`, a.severity);
-                }
-            } else {
-                showToast(`⚡ ${a.type}`, `Source: ${a.ip} (${a.country})`, a.severity, 4000);
-            }
+        if (!AudioContextClass) {
+            return null;
         }
 
-        // Compteur de paquets simulé
-        document.getElementById('c-packets').textContent = (Math.floor(Math.random() * 5000) + 500).toLocaleString();
+        liveAudioContext = new AudioContextClass();
+    }
 
-    } catch (e) { console.error(e); }
+    if (liveAudioContext.state === 'suspended') {
+        liveAudioContext.resume();
+    }
+
+    return liveAudioContext;
 }
 
-function renderAttacks(attacks) {
-    const filtered = currentFilter === 'all' ? attacks : attacks.filter(a => a.severity === currentFilter);
-    const stream   = document.getElementById('attack-stream');
+function playLiveTone(frequency, duration, volume) {
+    const context = getLiveAudioContext();
 
-    if (filtered.length === 0) {
-        stream.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Aucune attaque correspondante</div>';
+    if (!context) {
         return;
     }
 
-    stream.innerHTML = filtered.map(a => `
-        <div class="attack-row ${a.severity}" onclick="viewAttack(${a.id})">
-            <div class="attack-type-icon">${a.icon}</div>
-            <div class="attack-info">
-                <div class="attack-title">
-                    ${a.type}
-                    <span class="badge badge-${a.severity}" style="margin-left:6px;">${a.severity}</span>
-                    ${a.is_simulation ? '<span class="badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:#a855f7;margin-left:4px;">SIM</span>' : ''}
-                    ${a.status === 'blocked' ? '<span class="badge badge-low" style="margin-left:4px;">BLOQUÉ</span>' : ''}
-                </div>
-                <div class="attack-meta">
-                    <span class="ip-addr">${a.source_ip}</span>
-                    <span>🌍 ${a.city}, ${a.country}</span>
-                    <span>🔌 Port ${a.target_ip}</span>
-                    <span>⏱ ${a.time}</span>
-                </div>
-                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">${a.description || ''}</div>
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.value = frequency;
+    gain.gain.value = volume;
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+
+    oscillator.start();
+    oscillator.stop(context.currentTime + duration);
+}
+
+function triggerLiveAlarm(severity) {
+    const base = severity === 'critical' ? 920 : 700;
+    playLiveTone(base, 0.12, 0.035);
+    window.setTimeout(() => playLiveTone(base * 1.12, 0.12, 0.03), 180);
+}
+
+async function fetchLiveAttacks() {
+    try {
+        const response = await fetch('/api/live-attacks');
+        const data = await response.json();
+
+        attackCount = data.total || 0;
+        critCount = data.critical || 0;
+        highCount = (data.attacks || []).filter(attack => attack.severity === 'high').length;
+
+        document.getElementById('attack-counter-display').textContent = attackCount.toLocaleString();
+        document.getElementById('c-total').textContent = attackCount.toLocaleString();
+        document.getElementById('c-critical').textContent = critCount.toLocaleString();
+        document.getElementById('c-high').textContent = highCount.toLocaleString();
+        document.getElementById('geo-total').textContent = (data.attacks || []).length.toLocaleString();
+        document.getElementById('c-packets').textContent = (Math.floor(Math.random() * 5000) + 500).toLocaleString();
+
+        allAttacks = data.attacks || [];
+        renderAttacks(allAttacks);
+        updateRadar(allAttacks.slice(0, 8));
+
+        if (data.new_attack) {
+            const attack = data.new_attack;
+            if (attack.alarm && ['critical', 'high'].includes(attack.severity)) {
+                triggerLiveAlarm(attack.severity);
+                showToast(`${attack.type} détectée depuis ${attack.ip}.`, attack.severity === 'critical' ? 'error' : 'warning');
+            } else {
+                showToast(`${attack.type} détectée depuis ${attack.ip}.`, 'info', 3000);
+            }
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function renderAttacks(attacks) {
+    const filtered = currentFilter === 'all' ? attacks : attacks.filter(attack => attack.severity === currentFilter);
+    const stream = document.getElementById('attack-stream');
+
+    if (!filtered.length) {
+        stream.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🛰️</div>
+                <p class="empty-state-title">Aucune attaque pour ce filtre</p>
+                <p class="empty-state-text">Change le niveau de sévérité ou attends le prochain cycle live.</p>
             </div>
-            <div class="attack-stats">
-                <div class="packets">${Number(a.packet_count || 0).toLocaleString()}</div>
-                <div class="bw">${a.bandwidth_mbps || 0} Mbps</div>
-                <div style="margin-top:4px;">
-                    <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); blockAttack(${a.id})">
-                        <i class="fas fa-ban"></i>
-                    </button>
+        `;
+        document.getElementById('last-attack-content').textContent = 'Aucune attaque reçue pour le moment.';
+        return;
+    }
+
+    stream.innerHTML = filtered.map(attack => `
+        <div class="live-attack-row ${attack.severity}" onclick="viewAttack(${attack.id})">
+            <div class="live-attack-icon">${attack.icon}</div>
+            <div class="live-attack-info">
+                <div class="live-attack-title">
+                    <span>${attack.type}</span>
+                    <span class="badge badge-${attack.severity}">${attack.severity.toUpperCase()}</span>
+                    ${attack.is_simulation ? '<span class="badge badge-simulation">SIM</span>' : ''}
+                    ${attack.status === 'blocked' ? '<span class="badge badge-success">BLOQUÉE</span>' : ''}
+                </div>
+                <div class="live-attack-meta">
+                    <span class="ip-addr">${attack.source_ip}</span>
+                    <span>${attack.city}, ${attack.country}</span>
+                    <span>${attack.target_ip}</span>
+                    <span>${attack.time}</span>
+                </div>
+                <div class="live-attack-desc">${attack.description || ''}</div>
+            </div>
+            <div class="live-attack-stats">
+                <div class="live-attack-packets">${Number(attack.packet_count || 0).toLocaleString()}</div>
+                <div class="live-attack-bw">${attack.bandwidth_mbps || 0} Mbps</div>
+                <div class="dashboard-actions" style="margin-top: 0.45rem; justify-content: flex-end;">
+                    <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); blockAttack(${attack.id})">Bloquer</button>
                 </div>
             </div>
         </div>
     `).join('');
 
-    // Mettre à jour carte dernière attaque
     const last = filtered[0];
     if (last) {
         lastAttackId = last.id;
         document.getElementById('last-attack-content').innerHTML = `
-            <div style="font-size:20px; margin-bottom:8px;">${last.icon} ${last.type}</div>
-            <div class="ip-addr" style="margin-bottom:6px;">${last.source_ip}</div>
-            <div style="color:var(--text-muted); font-size:12px; margin-bottom:4px;">🌍 ${last.city}, ${last.country}</div>
-            <div class="badge badge-${last.severity}" style="margin-top:4px;">${last.severity}</div>
+            <div class="attack-title" style="font-size: 1rem; margin-bottom: 0.5rem;">${last.icon} ${last.type}</div>
+            <div class="ip-addr" style="margin-bottom: 0.35rem;">${last.source_ip}</div>
+            <div class="text-muted-small" style="margin-bottom: 0.35rem;">${last.city}, ${last.country}</div>
+            <span class="badge badge-${last.severity}">${last.severity.toUpperCase()}</span>
         `;
     }
 }
 
 function updateRadar(attacks) {
     const container = document.getElementById('radar-dots');
-    container.innerHTML = attacks.map((a, i) => {
-        const angle  = (i / attacks.length) * 360;
+    container.innerHTML = attacks.map((attack, index) => {
+        const angle = (index / Math.max(attacks.length, 1)) * 360;
         const radius = 30 + Math.random() * 35;
         const x = 80 + radius * Math.cos((angle * Math.PI) / 180);
         const y = 80 + radius * Math.sin((angle * Math.PI) / 180);
-        const color = { critical: '#ff0040', high: '#ff6b00', medium: '#ffd600', low: '#00ff88' }[a.severity] || '#00e5ff';
-        return `<div class="radar-dot" style="left:${x-3}px;top:${y-3}px;background:${color};box-shadow:0 0 6px ${color};"></div>`;
+        const color = { critical: '#dc2626', high: '#ea580c', medium: '#ca8a04', low: '#16a34a' }[attack.severity] || '#2563eb';
+        return `<div class="radar-dot" style="left:${x - 3}px;top:${y - 3}px;background:${color};box-shadow:0 0 6px ${color};"></div>`;
     }).join('');
 }
 
-function filterSeverity(sev, btn) {
-    currentFilter = sev;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+function filterSeverity(severity, button) {
+    currentFilter = severity;
+    document.querySelectorAll('.live-filter-btn').forEach(item => item.classList.remove('active'));
+    button.classList.add('active');
     renderAttacks(allAttacks);
 }
 
 async function blockAttack(id) {
-    await csrfFetch(`/attacks/block/${id}`, { method: 'POST' });
-    showToast('🛡️ IP Bloquée', 'Attaquant bloqué avec succès.', 'low');
-    fetchLiveAttacks();
+    try {
+        await csrfFetch(`/attacks/block/${id}`, { method: 'POST' });
+        showToast('Attaquant bloqué avec succès.', 'success');
+        fetchLiveAttacks();
+    } catch (error) {
+        showToast('Le blocage a échoué.', 'error');
+    }
 }
 
 function blockLastAttacker() {
-    if (lastAttackId) blockAttack(lastAttackId);
+    if (lastAttackId) {
+        blockAttack(lastAttackId);
+    } else {
+        showToast('Aucun attaquant récent à bloquer.', 'info');
+    }
 }
 
 function viewAttack(id) {
     window.location.href = `/attacks/${id}`;
 }
 
-// Polling
 fetchLiveAttacks();
-setInterval(fetchLiveAttacks, 3000);
+window.setInterval(fetchLiveAttacks, 3000);
 </script>
 @endpush

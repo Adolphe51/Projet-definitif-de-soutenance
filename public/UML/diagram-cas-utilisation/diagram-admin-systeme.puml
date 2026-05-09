@@ -1,0 +1,93 @@
+@startuml CyberGuardAdminSysteme
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Administrateur" as Admin
+actor "Utilisateur metier" as BusinessUser
+actor "Attaquant / VM reseau" as Attacker
+
+rectangle "Diagramme de cas d'utilisation Administrateur - CyberGuard" {
+
+  package "Authentification securisee" {
+    usecase "Se connecter avec OTP" as UC_LoginOtp
+    usecase "Verifier le code OTP" as UC_VerifyOtp
+    usecase "Creer une session securisee" as UC_Session
+    usecase "Se deconnecter" as UC_Logout
+  }
+
+  package "Mini site metier" {
+    usecase "Utiliser le mini site\navec session valide" as UC_MiniSite
+    usecase "Consulter ou modifier\nune donnee metier" as UC_BusinessAction
+  }
+
+  package "Supervision SOC" {
+    usecase "Consulter le dashboard" as UC_Dashboard
+    usecase "Consulter les alertes" as UC_Alerts
+    usecase "Consulter les incidents" as UC_Attacks
+    usecase "Consulter la geolocalisation" as UC_Geo
+    usecase "Ouvrir la fiche d'un incident" as UC_AttackDetail
+  }
+
+  package "Reponse a incident" {
+    usecase "Mettre a jour le statut" as UC_Status
+    usecase "Bloquer une IP" as UC_Block
+    usecase "Debloquer une IP" as UC_Unblock
+    usecase "Acquitter une alerte" as UC_Ack
+    usecase "Ajouter un commentaire SOC" as UC_Comment
+  }
+
+  package "Demonstration maitrisee" {
+    usecase "Lancer une simulation manuelle" as UC_Simulate
+    usecase "Suivre le flux live" as UC_Live
+  }
+
+  package "Honeypot secondaire" {
+    usecase "Declencher un piege public" as UC_TriggerTrap
+    usecase "Consulter le module honeypot" as UC_Honeypot
+  }
+}
+
+Admin --> UC_LoginOtp
+Admin --> UC_Logout
+Admin --> UC_Dashboard
+Admin --> UC_Alerts
+Admin --> UC_Attacks
+Admin --> UC_AttackDetail
+Admin --> UC_Geo
+Admin --> UC_Status
+Admin --> UC_Block
+Admin --> UC_Unblock
+Admin --> UC_Ack
+Admin --> UC_Comment
+Admin --> UC_Simulate
+Admin --> UC_Live
+Admin --> UC_Honeypot
+
+BusinessUser --> UC_LoginOtp
+BusinessUser --> UC_MiniSite
+BusinessUser --> UC_BusinessAction
+
+Attacker --> UC_TriggerTrap
+
+UC_LoginOtp --> UC_VerifyOtp : <<include>>
+UC_VerifyOtp --> UC_Session : <<include>>
+UC_MiniSite .> UC_LoginOtp : <<include>>
+UC_MiniSite .> UC_BusinessAction : <<include>>
+UC_Attacks --> UC_AttackDetail : <<include>>
+UC_Status --> UC_Comment : <<include>>
+UC_Simulate --> UC_Live : <<include>>
+UC_TriggerTrap --> UC_Honeypot : <<extend>>
+
+note bottom of UC_Simulate
+  Les simulations sont lancees
+  volontairement pour produire
+  des alertes explicables.
+end note
+
+note right of UC_Honeypot
+  Module maintenu comme composant
+  secondaire du systeme.
+end note
+
+@enduml

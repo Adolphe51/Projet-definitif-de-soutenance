@@ -42,7 +42,7 @@ class StudentController extends Controller
 
         event(new IntranetDataChanged('student', 'create', $student->toArray()));
 
-        return Redirect::route('intranet.students.index')->with('success', 'Étudiant créé avec succès.');
+        return Redirect::route('intranet.students.index')->with('success', 'Usager créé avec succès.');
     }
 
     public function show(string $id)
@@ -78,7 +78,7 @@ class StudentController extends Controller
 
         event(new IntranetDataChanged('student', 'update', $student->toArray()));
 
-        return Redirect::route('intranet.students.index')->with('success', 'Étudiant mis à jour.');
+        return Redirect::route('intranet.students.index')->with('success', 'Usager mis à jour.');
     }
 
     public function destroy(string $id)
@@ -89,6 +89,6 @@ class StudentController extends Controller
 
         event(new IntranetDataChanged('student', 'delete', ['id' => $id]));
 
-        return Redirect::route('intranet.students.index')->with('success', 'Étudiant supprimé.');
+        return Redirect::route('intranet.students.index')->with('success', 'Usager supprimé.');
     }
 }

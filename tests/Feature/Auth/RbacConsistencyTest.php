@@ -17,7 +17,7 @@ class RbacConsistencyTest extends TestCase
     public function test_user_role_and_permission_helpers_match_the_current_schema(): void
     {
         $user = User::factory()->create([
-            'nom' => 'Analyste Demo',
+            'nom' => 'Admin Demo',
         ]);
 
         $permission = Permission::create([
@@ -28,18 +28,18 @@ class RbacConsistencyTest extends TestCase
 
         UserRole::create([
             'user_id' => $user->id,
-            'role' => AppRole::Analyst->value,
+            'role' => AppRole::Admin->value,
         ]);
 
         RolePermission::create([
-            'role' => AppRole::Analyst->value,
+            'role' => AppRole::Admin->value,
             'permission_id' => $permission->id,
         ]);
 
         $user->load('roles.permissions');
 
-        $this->assertSame('Analyste Demo', $user->name);
-        $this->assertTrue($user->hasRole(AppRole::Analyst->value));
+        $this->assertSame('Admin Demo', $user->name);
+        $this->assertTrue($user->hasRole(AppRole::Admin->value));
         $this->assertTrue($user->hasPermission('alerts.list'));
         $this->assertSame('alerts.list', $user->roles->first()->permissions->first()->name);
     }

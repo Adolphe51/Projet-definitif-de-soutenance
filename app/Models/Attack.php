@@ -11,6 +11,8 @@ class Attack extends Model
 
     protected $fillable = [
         'type',
+        'rule_id',
+        'incident_id',
         'source_ip',
         'target_ip',
         'target_port',
@@ -49,15 +51,41 @@ class Attack extends Model
         return $this->hasMany(Alert::class);
     }
 
+    public function alert()
+    {
+        return $this->hasOne(Alert::class);
+    }
+
+    public function rule()
+    {
+        return $this->belongsTo(DetectionRule::class, 'rule_id', 'rule_id');
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(AttackComment::class)->orderByDesc('created_at');
+    }
+
+    /**
+     * Récupérer les attaques corrélées (même incident_id)
+     */
+    public function correlatedAttacks()
+    {
+        if (!$this->incident_id) {
+            return static::where('id', $this->id);
+        }
+        return static::where('incident_id', $this->incident_id)->orderBy('created_at');
+    }
+
     // Accessors
     public function getSeverityColorAttribute(): string
     {
         return match ($this->severity) {
             'critical' => '#ff0040',
-            'high'     => '#ff6b00',
-            'medium'   => '#ffcc00',
-            'low'      => '#00ff88',
-            default    => '#aaaaaa',
+            'high' => '#ff6b00',
+            'medium' => '#ffcc00',
+            'low' => '#00ff88',
+            default => '#aaaaaa',
         };
     }
 
@@ -65,25 +93,25 @@ class Attack extends Model
     {
         return match ($this->severity) {
             'critical' => '💀',
-            'high'     => '🔴',
-            'medium'   => '🟡',
-            'low'      => '🟢',
-            default    => '⚪',
+            'high' => '🔴',
+            'medium' => '🟡',
+            'low' => '🟢',
+            default => '⚪',
         };
     }
 
     public function getTypeIconAttribute(): string
     {
         return match ($this->type) {
-            'DDoS'        => '🌊',
+            'DDoS' => '🌊',
             'SQL Injection' => '💉',
-            'XSS'         => '📜',
+            'XSS' => '📜',
             'Brute Force' => '🔨',
-            'Port Scan'   => '🔍',
-            'Ransomware'  => '🔒',
-            'Phishing'    => '🎣',
-            'MITM'        => '👤',
-            default       => '⚡',
+            'Port Scan' => '🔍',
+            'Ransomware' => '🔒',
+            'Phishing' => '🎣',
+            'MITM' => '👤',
+            default => '⚡',
         };
     }
 
@@ -106,19 +134,10 @@ class Attack extends Model
 
     public static function attackTypes(): array
     {
-        return [
-            'DDoS',
+        return config('cyberguard.detection.monitored_types', [
+            'Brute Force',
             'SQL Injection',
             'XSS',
-            'Brute Force',
-            'Port Scan',
-            'Ransomware',
-            'Phishing',
-            'MITM',
-            'Buffer Overflow',
-            'DNS Spoofing',
-            'ARP Poisoning',
-            'Zero Day'
-        ];
+        ]);
     }
 }

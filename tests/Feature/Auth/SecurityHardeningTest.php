@@ -75,7 +75,7 @@ class SecurityHardeningTest extends TestCase
                 'code' => $code,
             ]);
 
-        $response->assertRedirect(route('admin.dashboard'));
+        $response->assertRedirect(route('dashboard'));
 
         $cookies = $response->headers->getCookies();
         $accessTokenCookie = collect($cookies)->first(fn ($cookie) => $cookie->getName() === 'access_token');
@@ -119,7 +119,7 @@ class SecurityHardeningTest extends TestCase
                 'code' => $code,
             ]);
 
-        $response->assertRedirect(route('admin.dashboard'));
+        $response->assertRedirect(route('dashboard'));
 
         $cookies = $response->headers->getCookies();
         $accessTokenCookie = collect($cookies)->first(fn ($cookie) => $cookie->getName() === 'access_token');
@@ -153,7 +153,7 @@ class SecurityHardeningTest extends TestCase
             ->withHeader('User-Agent', $userAgent)
             ->withHeader('Accept-Language', $language)
             ->withCookie('access_token', $token)
-            ->get(route('admin.dashboard'));
+            ->get(route('dashboard'));
 
         $response->assertRedirect(route('login'));
         $response->assertSessionHasErrors('session');

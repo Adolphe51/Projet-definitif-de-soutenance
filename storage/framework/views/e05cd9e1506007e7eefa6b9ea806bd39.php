@@ -1,1 +1,0 @@
-<?php /**PATH /home/olivierfatombi/Desktop/Projet_Soutenance/Projet-definitif-de-soutenance/resources/views/layouts/footer.blade.php ENDPATH**/ ?>

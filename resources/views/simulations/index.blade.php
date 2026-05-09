@@ -1,316 +1,374 @@
 @extends('layouts.app')
-@section('title', 'Simulations — CyberGuard')
-@section('page-title', '⚗️ Centre de Simulation')
-
-@push('styles')
-<style>
-.sim-grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; }
-
-.launch-panel {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-}
-
-.form-group { margin-bottom: 16px; }
-.form-label { display: block; font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
-
-.form-control {
-    width: 100%;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text-primary);
-    padding: 10px 12px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-.form-control:focus { border-color: var(--accent-cyan); box-shadow: 0 0 0 3px rgba(0,229,255,0.1); }
-
-select.form-control { cursor: pointer; }
-
-.intensity-selector { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-
-.intensity-opt {
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--bg-secondary);
-    color: var(--text-muted);
-    cursor: pointer;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 600;
-    transition: all 0.2s;
-}
-
-.intensity-opt.selected { border-color: var(--opt-color, var(--accent-cyan)); color: var(--opt-color, var(--accent-cyan)); background: rgba(0,229,255,0.08); }
-
-.sim-progress {
-    display: none;
-    background: var(--bg-card2);
-    border: 1px solid rgba(0,229,255,0.2);
-    border-radius: 10px;
-    padding: 20px;
-    margin-top: 16px;
-}
-
-.progress-bar-wrap {
-    background: var(--bg-secondary);
-    border-radius: 4px;
-    height: 8px;
-    overflow: hidden;
-    margin: 10px 0;
-}
-
-.progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
-    border-radius: 4px;
-    transition: width 0.5s;
-    width: 0%;
-    box-shadow: 0 0 10px rgba(0,229,255,0.5);
-}
-
-.sim-log {
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
-    height: 200px;
-    overflow-y: auto;
-    color: var(--accent-green);
-    line-height: 1.7;
-}
-
-.log-line { padding: 1px 0; }
-.log-line.warn  { color: var(--accent-yellow); }
-.log-line.error { color: var(--accent-red); }
-.log-line.info  { color: var(--accent-cyan); }
-
-.history-table-wrap { overflow-x: auto; }
-
-.sim-status {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 8px; border-radius: 4px;
-    font-family: 'Share Tech Mono', monospace; font-size: 11px;
-}
-.sim-status.running   { background: rgba(0,255,136,0.1);  color: var(--accent-green); border: 1px solid rgba(0,255,136,0.3); }
-.sim-status.completed { background: rgba(0,229,255,0.1);  color: var(--accent-cyan);  border: 1px solid rgba(0,229,255,0.3); }
-.sim-status.stopped   { background: rgba(255,107,0,0.1);  color: var(--accent-orange);border: 1px solid rgba(255,107,0,0.3); }
-.sim-status.pending   { background: rgba(255,214,0,0.1);  color: var(--accent-yellow);border: 1px solid rgba(255,214,0,0.3); }
-</style>
-@endpush
+@section('title', 'Simulations')
+@section('page-title', 'Laboratoire de simulation')
+@section('page-subtitle', 'Espace isolé pour démontrer des scénarios d’attaque sans mélanger la partie soutenance avec la supervision opérationnelle.')
 
 @section('content')
-<div class="sim-grid">
+    @php
+        $runningCount = $simulations->where('status', 'running')->count();
+        $completedCount = $simulations->where('status', 'completed')->count();
+        $highIntensityCount = $simulations->where('intensity', 'high')->count();
+        $totalPackets = $simulations->sum('packets_sent');
+    @endphp
 
-    <!-- Panneau de lancement -->
-    <div>
-        <div class="launch-panel">
-            <div class="section-title" style="margin-bottom: 20px;">🚀 Lancer Simulation</div>
-
-            <div class="form-group">
-                <label class="form-label">Type d'Attaque</label>
-                <select class="form-control" id="sim-type">
-                    @foreach($types as $type)
-                    <option value="{{ $type }}">{{ $type }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">IP Cible</label>
-                <input type="text" class="form-control" id="sim-target" value="192.168.1.100" placeholder="ex: 10.0.0.1">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Durée (secondes): <span id="dur-display" style="color:var(--accent-cyan);">30s</span></label>
-                <input type="range" class="form-control" id="sim-duration" min="5" max="120" value="30"
-                    oninput="document.getElementById('dur-display').textContent = this.value + 's'"
-                    style="padding: 4px 0; background: none; border: none;">
-                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted);">
-                    <span>5s</span><span>60s</span><span>120s</span>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Intensité</label>
-                <div class="intensity-selector">
-                    <div class="intensity-opt" style="--opt-color:var(--accent-green);" onclick="selectIntensity('low', this)">
-                        <div style="font-size:16px; margin-bottom:4px;">🟢</div>
-                        Faible
-                    </div>
-                    <div class="intensity-opt selected" style="--opt-color:var(--accent-yellow);" onclick="selectIntensity('medium', this)">
-                        <div style="font-size:16px; margin-bottom:4px;">🟡</div>
-                        Moyen
-                    </div>
-                    <div class="intensity-opt" style="--opt-color:var(--accent-red);" onclick="selectIntensity('high', this)">
-                        <div style="font-size:16px; margin-bottom:4px;">🔴</div>
-                        Élevé
-                    </div>
-                </div>
-                <input type="hidden" id="sim-intensity" value="medium">
-            </div>
-
-            <button class="btn btn-warning" style="width:100%; justify-content:center; padding:14px;" id="launch-btn" onclick="launchSimulation()">
-                <i class="fas fa-play"></i> Lancer la Simulation
-            </button>
-
-            <button class="btn btn-danger" style="width:100%; justify-content:center; margin-top:8px; display:none;" id="stop-btn" onclick="stopSimulation()">
-                <i class="fas fa-stop"></i> Arrêter
-            </button>
-        </div>
-
-        <!-- Progress -->
-        <div class="sim-progress" id="sim-progress">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--accent-cyan);">SIMULATION EN COURS</span>
-                <span id="sim-elapsed" style="font-family:'Rajdhani',sans-serif; font-size:20px; color:var(--accent-green);">0s</span>
-            </div>
-            <div class="progress-bar-wrap">
-                <div class="progress-bar-fill" id="progress-fill"></div>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:12px;">
-                <span>Paquets envoyés: <strong id="sim-packets" style="color:var(--accent-cyan);">0</strong></span>
-                <span id="sim-percent">0%</span>
-            </div>
-
-            <div class="sim-log" id="sim-log">
-                <div class="log-line info">// Journal de simulation</div>
+    <section class="dashboard-hero">
+        <div class="dashboard-hero-copy">
+            <span class="dashboard-chip">Environnement de démonstration</span>
+            <h2>Un panneau de simulation clair pour lancer, suivre et expliquer les scénarios de test.</h2>
+            <p>
+                Le laboratoire reste volontairement séparé du dashboard et du traitement des incidents,
+                afin de garder une navigation propre entre démonstration pédagogique et usage opérationnel.
+            </p>
+            <div class="dashboard-actions">
+                <a href="{{ route('attacks.live') }}" class="btn btn-primary">Voir le flux temps réel</a>
+                <a href="{{ route('attacks.index') }}" class="btn btn-secondary-outline">Retour aux incidents</a>
             </div>
         </div>
-    </div>
 
-    <!-- Panel droit: feed + historique -->
-    <div>
-        <!-- Feed simulation -->
-        <div class="card" style="margin-bottom: 20px;">
+        <div class="dashboard-health {{ $runningCount > 0 ? 'dashboard-health--medium' : 'dashboard-health--low' }}">
+            <div class="dashboard-health-label">État du laboratoire</div>
+            <div class="dashboard-health-value">{{ $runningCount > 0 ? 'Simulation en cours' : 'Prêt pour une démonstration' }}</div>
+            <div class="dashboard-health-meta">
+                {{ $runningCount }} active(s) · {{ $completedCount }} terminée(s) · {{ number_format($totalPackets) }} paquets simulés
+            </div>
+            <div class="dashboard-health-stats">
+                <div>
+                    <strong>{{ count($types) }}</strong>
+                    <span>types disponibles</span>
+                </div>
+                <div>
+                    <strong>{{ $highIntensityCount }}</strong>
+                    <span>scénarios élevés</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="attacks-overview-grid">
+        <article class="attacks-overview-card attacks-overview-card--neutral">
+            <span class="attacks-overview-label">Historique</span>
+            <strong>{{ $simulations->count() }}</strong>
+            <p>Total des démonstrations enregistrées dans le laboratoire.</p>
+        </article>
+        <article class="attacks-overview-card attacks-overview-card--medium">
+            <span class="attacks-overview-label">En cours</span>
+            <strong>{{ $runningCount }}</strong>
+            <p>Scénarios actuellement actifs ou récemment relancés.</p>
+        </article>
+        <article class="attacks-overview-card attacks-overview-card--high">
+            <span class="attacks-overview-label">Intensité haute</span>
+            <strong>{{ $highIntensityCount }}</strong>
+            <p>Cas plus démonstratifs pour montrer l’impact de la détection.</p>
+        </article>
+        <article class="attacks-overview-card attacks-overview-card--critical">
+            <span class="attacks-overview-label">Paquets simulés</span>
+            <strong>{{ number_format($totalPackets) }}</strong>
+            <p>Volume cumulé généré par les exercices de simulation.</p>
+        </article>
+    </section>
+
+    <div class="sim-layout-grid">
+        <section class="card dashboard-panel sim-launch-card">
             <div class="section-header">
-                <div class="section-title">Flux de Simulation</div>
-                <span id="sim-badge" class="badge badge-info">EN ATTENTE</span>
-            </div>
-            <div id="sim-feed" style="max-height: 280px; overflow-y: auto;">
-                <div style="text-align:center; padding:40px; color:var(--text-muted);">
-                    <div style="font-size:36px; margin-bottom:12px;">⚗️</div>
-                    Lancez une simulation pour voir le flux
+                <div>
+                    <div class="section-title">Lancer un scénario</div>
+                    <p class="section-intro">Choisis un type d’attaque, une cible de démonstration et un niveau d’intensité.</p>
                 </div>
             </div>
-        </div>
 
-        <!-- Historique -->
-        <div class="card">
-            <div class="section-header">
-                <div class="section-title">Historique des Simulations</div>
-            </div>
-            <div class="history-table-wrap">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Nom</th>
-                            <th>Type</th>
-                            <th>Cible</th>
-                            <th>Durée</th>
-                            <th>Intensité</th>
-                            <th>Paquets</th>
-                            <th>Statut</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sim-history">
-                        @foreach($simulations as $sim)
-                        <tr>
-                            <td class="mono" style="font-size:12px;">{{ $sim->name }}</td>
-                            <td><span class="badge badge-info">{{ $sim->attack_type }}</span></td>
-                            <td class="ip-addr">{{ $sim->target_ip }}</td>
-                            <td>{{ $sim->duration_seconds }}s</td>
-                            <td>
-                                @if($sim->intensity === 'high')   <span style="color:var(--accent-red);">🔴 Élevé</span>
-                                @elseif($sim->intensity === 'medium') <span style="color:var(--accent-yellow);">🟡 Moyen</span>
-                                @else <span style="color:var(--accent-green);">🟢 Faible</span>
-                                @endif
-                            </td>
-                            <td class="mono">{{ number_format($sim->packets_sent) }}</td>
-                            <td><span class="sim-status {{ $sim->status }}">{{ strtoupper($sim->status) }}</span></td>
-                        </tr>
+            <div class="sim-form-grid">
+                <label class="filter-field">
+                    <span class="form-label">Type d’attaque</span>
+                    <select class="form-control" id="sim-type">
+                        @foreach($types as $type)
+                            <option value="{{ $type }}">{{ $type }}</option>
                         @endforeach
-                    </tbody>
-                </table>
+                    </select>
+                </label>
+
+                <label class="filter-field">
+                    <span class="form-label">IP cible</span>
+                    <input type="text" class="form-control" id="sim-target" value="192.168.1.100" placeholder="ex: 10.0.0.1">
+                </label>
+
+                <div class="filter-field">
+                    <span class="form-label">Durée de démonstration</span>
+                    <input
+                        type="range"
+                        class="form-control"
+                        id="sim-duration"
+                        min="5"
+                        max="120"
+                        value="30"
+                        oninput="document.getElementById('dur-display').textContent = this.value + 's'"
+                        style="padding-inline: 0;"
+                    >
+                    <div class="sim-progress-meta">
+                        <span id="dur-display">30s</span>
+                    </div>
+                    <div class="sim-scale-row">
+                        <span>5s</span>
+                        <span>60s</span>
+                        <span>120s</span>
+                    </div>
+                </div>
+
+                <div class="filter-field">
+                    <span class="form-label">Intensité</span>
+                    <div class="sim-intensity-grid">
+                        <button type="button" class="sim-intensity-option" style="--sim-opt-color: var(--accent-green);" onclick="selectIntensity('low', this)">
+                            <span class="sim-intensity-icon">🟢</span>
+                            Faible
+                        </button>
+                        <button type="button" class="sim-intensity-option selected" style="--sim-opt-color: var(--accent-yellow);" onclick="selectIntensity('medium', this)">
+                            <span class="sim-intensity-icon">🟡</span>
+                            Moyen
+                        </button>
+                        <button type="button" class="sim-intensity-option" style="--sim-opt-color: var(--accent-red);" onclick="selectIntensity('high', this)">
+                            <span class="sim-intensity-icon">🔴</span>
+                            Élevé
+                        </button>
+                    </div>
+                    <input type="hidden" id="sim-intensity" value="medium">
+                </div>
             </div>
+
+            <div class="attacks-filter-actions">
+                <button class="btn btn-warning" id="launch-btn" onclick="launchSimulation()">
+                    Lancer la simulation
+                </button>
+                <button class="btn btn-danger" id="stop-btn" onclick="stopSimulation()" style="display: none;">
+                    Arrêter
+                </button>
+            </div>
+
+            <div class="sim-progress-panel" id="sim-progress" style="display: none;">
+                <div class="sim-progress-head">
+                    <span class="sim-progress-label">Simulation en cours</span>
+                    <span id="sim-elapsed" class="sim-progress-time">0s</span>
+                </div>
+
+                <div class="sim-progress-track">
+                    <div class="sim-progress-fill" id="progress-fill"></div>
+                </div>
+
+                <div class="sim-progress-meta">
+                    <span>Paquets envoyés: <strong id="sim-packets">0</strong></span>
+                    <span id="sim-percent">0%</span>
+                </div>
+            </div>
+
+            <div class="sim-log-shell">
+                <div class="section-title">Journal de simulation</div>
+                <div class="sim-log" id="sim-log">
+                    <div class="log-line info">// Journal de simulation prêt</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="sim-side-stack">
+            <section class="card dashboard-panel sim-stage-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Flux de simulation</div>
+                        <p class="section-intro">Visualisation instantanée des événements produits pendant la démonstration.</p>
+                    </div>
+                    <span id="sim-badge" class="badge badge-info">EN ATTENTE</span>
+                </div>
+
+                <div id="sim-feed" class="sim-feed">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚗️</div>
+                        <p class="empty-state-title">Aucun flux pour le moment</p>
+                        <p class="empty-state-text">Lance un scénario pour voir apparaître les attaques simulées et leur sévérité.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card dashboard-panel sim-history-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Historique des simulations</div>
+                        <p class="section-intro">Archive des essais réalisés avec leur cible, leur intensité et leur statut final.</p>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Type</th>
+                                <th>Cible</th>
+                                <th>Durée</th>
+                                <th>Intensité</th>
+                                <th>Paquets</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sim-history">
+                            @forelse($simulations as $sim)
+                                <tr>
+                                    <td class="mono text-muted-small">{{ $sim->name }}</td>
+                                    <td><span class="badge badge-info">{{ $sim->attack_type }}</span></td>
+                                    <td class="ip-addr">{{ $sim->target_ip }}</td>
+                                    <td>{{ $sim->duration_seconds }}s</td>
+                                    <td>
+                                        @if($sim->intensity === 'high')
+                                            <span class="badge badge-critical">Élevée</span>
+                                        @elseif($sim->intensity === 'medium')
+                                            <span class="badge badge-warning">Moyenne</span>
+                                        @else
+                                            <span class="badge badge-success">Faible</span>
+                                        @endif
+                                    </td>
+                                    <td class="mono">{{ number_format($sim->packets_sent) }}</td>
+                                    <td><span class="sim-status {{ $sim->status }}">{{ strtoupper($sim->status) }}</span></td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7">
+                                        <div class="sim-history-empty">Aucune simulation enregistrée pour le moment.</div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
     </div>
-</div>
 @endsection
 
 @push('scripts')
 <script>
-let currentSimId   = null;
-let simInterval    = null;
-let simStartTime   = null;
-let simDuration    = 30;
-let simPackets     = 0;
+let currentSimId = null;
+let simInterval = null;
+let simStartTime = null;
+let simDuration = 30;
+let simPackets = 0;
+let simulationAudioContext = null;
+let simulationSignalTimers = [];
+const simulationRoutes = {
+    launch: @json(route('simulations.launch')),
+    simulate: @json(route('simulations.api.simulate')),
+    stopBase: @json(url('/simulations/stop')),
+};
 
-function selectIntensity(val, el) {
-    document.querySelectorAll('.intensity-opt').forEach(o => o.classList.remove('selected'));
-    el.classList.add('selected');
-    document.getElementById('sim-intensity').value = val;
+function selectIntensity(value, element) {
+    document.querySelectorAll('.sim-intensity-option').forEach(option => option.classList.remove('selected'));
+    element.classList.add('selected');
+    document.getElementById('sim-intensity').value = value;
+}
+
+function getSimulationAudioContext() {
+    if (!simulationAudioContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+        if (!AudioContextClass) {
+            return null;
+        }
+
+        simulationAudioContext = new AudioContextClass();
+    }
+
+    if (simulationAudioContext.state === 'suspended') {
+        simulationAudioContext.resume();
+    }
+
+    return simulationAudioContext;
+}
+
+function playSimulationTone(frequency, duration, volume) {
+    const context = getSimulationAudioContext();
+
+    if (!context) {
+        return;
+    }
+
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = 'triangle';
+    oscillator.frequency.value = frequency;
+    gain.gain.value = volume;
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+
+    oscillator.start();
+    oscillator.stop(context.currentTime + duration);
+}
+
+function startSimulationSignal(level) {
+    stopSimulationSignal();
+
+    if (level !== 'high') {
+        return;
+    }
+
+    simulationSignalTimers.push(window.setTimeout(() => playSimulationTone(720, 0.14, 0.035), 0));
+    simulationSignalTimers.push(window.setTimeout(() => playSimulationTone(880, 0.14, 0.03), 220));
+}
+
+function stopSimulationSignal() {
+    simulationSignalTimers.forEach(timer => window.clearTimeout(timer));
+    simulationSignalTimers = [];
 }
 
 async function launchSimulation() {
-    const type      = document.getElementById('sim-type').value;
-    const target    = document.getElementById('sim-target').value;
-    const duration  = parseInt(document.getElementById('sim-duration').value);
+    const type = document.getElementById('sim-type').value;
+    const target = document.getElementById('sim-target').value;
+    const duration = parseInt(document.getElementById('sim-duration').value, 10);
     const intensity = document.getElementById('sim-intensity').value;
 
     if (!target.match(/^(\d{1,3}\.){3}\d{1,3}$/)) {
-        showToast('❌ Erreur', 'Adresse IP invalide', 'medium');
+        showToast('Adresse IP invalide.', 'error');
         return;
     }
 
     simDuration = duration;
-    simPackets  = 0;
+    simPackets = 0;
 
-    const res  = await csrfFetch('/simulations/launch', {
-        method: 'POST',
-        body: JSON.stringify({ attack_type: type, target_ip: target, duration, intensity })
-    });
-    const data = await res.json();
+    try {
+        const response = await csrfFetch(simulationRoutes.launch, {
+            method: 'POST',
+            body: JSON.stringify({ attack_type: type, target_ip: target, duration, intensity })
+        });
+        const data = await response.json();
 
-    if (data.success) {
-        currentSimId   = data.simulation_id;
-        simStartTime   = Date.now();
-        document.getElementById('sim-progress').style.display = 'block';
-        document.getElementById('launch-btn').style.display   = 'none';
-        document.getElementById('stop-btn').style.display     = 'block';
-        document.getElementById('sim-badge').textContent      = 'EN COURS';
-        document.getElementById('sim-badge').className        = 'badge badge-low';
-
-        addLog(`[${now()}] Simulation ${type} démarrée vers ${target}`, 'info');
-        addLog(`[${now()}] Intensité: ${intensity} | Durée: ${duration}s`, 'info');
-
-        simInterval = setInterval(runSimStep, 1500);
-
-        showToast('🚀 Simulation lancée', `${type} → ${target}`, 'low');
-
-        // Déclencher alarme si intensité haute
-        if (intensity === 'high') {
-            triggerAlarm('high');
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'La simulation n’a pas pu être démarrée.');
         }
+
+        if (data.success) {
+            currentSimId = data.simulation_id;
+            simStartTime = Date.now();
+            document.getElementById('sim-progress').style.display = 'grid';
+            document.getElementById('launch-btn').style.display = 'none';
+            document.getElementById('stop-btn').style.display = 'inline-flex';
+            document.getElementById('sim-badge').textContent = 'EN COURS';
+            document.getElementById('sim-badge').className = 'badge badge-success';
+
+            addLog(`[${now()}] Simulation ${type} démarrée vers ${target}`, 'info');
+            addLog(`[${now()}] Intensité: ${intensity} | Durée: ${duration}s`, 'info');
+
+            simInterval = window.setInterval(runSimStep, 1500);
+            showToast(`Simulation ${type} lancée vers ${target}.`, 'success');
+            startSimulationSignal(intensity);
+        }
+    } catch (error) {
+        showToast(error.message || 'La simulation n’a pas pu être démarrée.', 'error');
     }
 }
 
 async function runSimStep() {
     const elapsed = (Date.now() - simStartTime) / 1000;
-    const pct     = Math.min((elapsed / simDuration) * 100, 100);
+    const percent = Math.min((elapsed / simDuration) * 100, 100);
 
-    document.getElementById('progress-fill').style.width = pct + '%';
-    document.getElementById('sim-elapsed').textContent   = Math.floor(elapsed) + 's';
-    document.getElementById('sim-percent').textContent   = Math.round(pct) + '%';
+    document.getElementById('progress-fill').style.width = `${percent}%`;
+    document.getElementById('sim-elapsed').textContent = `${Math.floor(elapsed)}s`;
+    document.getElementById('sim-percent').textContent = `${Math.round(percent)}%`;
 
     if (elapsed >= simDuration) {
         stopSimulation(true);
@@ -318,68 +376,99 @@ async function runSimStep() {
     }
 
     try {
-        const res  = await csrfFetch(`/api/simulate?simulation_id=${currentSimId}`, { method: 'POST', body: JSON.stringify({}) });
-        const data = await res.json();
+        const simulateUrl = `${simulationRoutes.simulate}?simulation_id=${encodeURIComponent(currentSimId)}`;
+        const response = await csrfFetch(simulateUrl, {
+            method: 'POST',
+            body: JSON.stringify({})
+        });
+        const data = await response.json();
 
-        if (data.status === 'completed') { stopSimulation(true); return; }
+        if (!response.ok) {
+            throw new Error(data.message || 'Erreur pendant la génération des événements.');
+        }
+
+        if (data.status === 'completed') {
+            stopSimulation(true);
+            return;
+        }
+
+        if (data.status === 'failed') {
+            throw new Error(data.message || 'La simulation a échoué.');
+        }
 
         if (data.attack) {
-            const a = data.attack;
-            simPackets += a.packets || 0;
+            const attack = data.attack;
+            simPackets += attack.packets || 0;
             document.getElementById('sim-packets').textContent = Number(simPackets).toLocaleString();
 
-            addLog(`[${now()}] PKT→ ${a.source_ip} (${a.city}, ${a.country}) | ${a.severity.toUpperCase()} | ${Number(a.packets).toLocaleString()} pkts`, 
-                a.severity === 'critical' ? 'error' : a.severity === 'high' ? 'warn' : '');
+            addLog(
+                `[${now()}] PKT→ ${attack.source_ip} (${attack.city}, ${attack.country}) | ${attack.severity.toUpperCase()} | ${Number(attack.packets).toLocaleString()} pkts`,
+                attack.severity === 'critical' ? 'error' : attack.severity === 'high' ? 'warn' : ''
+            );
 
-            // Ajouter au feed
-            prependFeed(a);
+            prependFeed(attack);
         }
-    } catch (e) {}
+    } catch (error) {
+        addLog(`[${now()}] ${error.message || 'Erreur interne de simulation.'}`, 'error');
+        stopSimulation();
+        showToast(error.message || 'La simulation a été interrompue.', 'error');
+    }
 }
 
-function prependFeed(a) {
-    const feed    = document.getElementById('sim-feed');
-    const item    = document.createElement('div');
-    item.style.cssText = 'display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(26,58,92,0.4);animation:rowAppear 0.3s ease-out;';
+function prependFeed(attack) {
+    const feed = document.getElementById('sim-feed');
+    const item = document.createElement('div');
+
+    item.className = 'sim-feed-item';
     item.innerHTML = `
-        <span style="color:var(--accent-cyan);font-family:'Share Tech Mono',monospace;font-size:11px;">${now()}</span>
-        <span class="badge badge-${a.severity}">${a.severity}</span>
-        <span style="font-size:12px;flex:1;">${a.type} • <span class="ip-addr">${a.source_ip}</span> • ${a.country}</span>
-        <span style="font-size:11px;color:var(--text-muted);">${Number(a.packets).toLocaleString()} pkts</span>
+        <span class="sim-feed-time">${now()}</span>
+        <span class="badge badge-${attack.severity}">${attack.severity.toUpperCase()}</span>
+        <span class="sim-feed-text">${attack.type} · <span class="ip-addr">${attack.source_ip}</span> · ${attack.country}</span>
+        <span class="sim-feed-volume">${Number(attack.packets).toLocaleString()} pkts</span>
     `;
-    if (feed.firstChild?.style?.textAlign === 'center') feed.innerHTML = '';
+
+    if (feed.querySelector('.empty-state')) {
+        feed.innerHTML = '';
+    }
+
     feed.insertBefore(item, feed.firstChild);
-    if (feed.children.length > 30) feed.removeChild(feed.lastChild);
+
+    if (feed.children.length > 30) {
+        feed.removeChild(feed.lastChild);
+    }
 }
 
 function stopSimulation(completed = false) {
-    clearInterval(simInterval);
-    document.getElementById('launch-btn').style.display = 'block';
-    document.getElementById('stop-btn').style.display   = 'none';
-    document.getElementById('sim-badge').textContent    = completed ? 'TERMINÉ' : 'ARRÊTÉ';
-    document.getElementById('sim-badge').className      = 'badge badge-info';
+    window.clearInterval(simInterval);
+    simInterval = null;
+    document.getElementById('launch-btn').style.display = 'inline-flex';
+    document.getElementById('stop-btn').style.display = 'none';
+    document.getElementById('sim-badge').textContent = completed ? 'TERMINÉ' : 'ARRÊTÉ';
+    document.getElementById('sim-badge').className = 'badge badge-info';
+    document.getElementById('sim-progress').style.display = 'none';
 
     if (currentSimId && !completed) {
-        csrfFetch(`/simulations/stop/${currentSimId}`, { method: 'POST' });
+        csrfFetch(`${simulationRoutes.stopBase}/${currentSimId}`, { method: 'POST' });
     }
 
-    addLog(`[${now()}] ✅ Simulation ${completed ? 'complétée' : 'arrêtée'} | Paquets totaux: ${Number(simPackets).toLocaleString()}`, 'info');
-    stopAlarm();
-    showToast('⚗️ Simulation ' + (completed ? 'terminée' : 'arrêtée'), `${Number(simPackets).toLocaleString()} paquets envoyés`, 'low');
+    addLog(`[${now()}] Simulation ${completed ? 'complétée' : 'arrêtée'} | Paquets totaux: ${Number(simPackets).toLocaleString()}`, 'info');
+    stopSimulationSignal();
+    showToast(`Simulation ${completed ? 'terminée' : 'arrêtée'} · ${Number(simPackets).toLocaleString()} paquets envoyés.`, 'info');
     currentSimId = null;
 }
 
-function addLog(msg, cls = '') {
-    const log  = document.getElementById('sim-log');
+function addLog(message, level = '') {
+    const log = document.getElementById('sim-log');
     const line = document.createElement('div');
-    line.className = `log-line ${cls}`;
-    line.textContent = msg;
+
+    line.className = `log-line ${level}`;
+    line.textContent = message;
     log.appendChild(line);
     log.scrollTop = log.scrollHeight;
 }
 
 function now() {
-    return new Date().toLocaleTimeString('fr-FR', {hour12: false});
+    return new Date().toLocaleTimeString('fr-FR', { hour12: false });
 }
 </script>
 @endpush

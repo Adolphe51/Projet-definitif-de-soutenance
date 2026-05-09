@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\AppRole;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,7 +13,6 @@ return new class extends Migration {
         Schema::create('role_permissions', function (Blueprint $table) {
             // Colonne "role" correspondant à AppRole
             $table->string('role')
-                ->default(AppRole::Analyst->value)
                 ->comment('Identifiant technique du rôle');
 
             $table->foreignId('permission_id')

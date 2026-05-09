@@ -1,0 +1,46 @@
+@startuml
+title Diagramme d'etat - Cycle de vie d'une attaque
+skinparam shadowing false
+
+[*] --> detected : detection initiale
+
+state detected {
+  note right
+    Source possible :
+    - mini site metier
+    - simulation manuelle
+    - evenement reseau
+  end note
+}
+
+detected --> investigating : analyse SOC
+detected --> blocked : auto-blocage\nou blocage manuel
+detected --> false_positive : requalification
+
+investigating --> blocked : decision defensive
+investigating --> resolved : incident traite
+investigating --> false_positive : faux positif confirme
+
+blocked --> investigating : debogage / deblocage
+blocked --> resolved : incident contenu
+
+false_positive --> [*]
+resolved --> [*]
+
+note bottom of blocked
+  Effets possibles :
+  - BlockedIp
+  - alerte de blocage
+  - trace d'audit
+  - commentaire SOC
+end note
+
+note bottom of investigating
+  L'investigation peut inclure :
+  - consultation de la regle
+  - geolocalisation
+  - correlation des incidents
+  - ajout d'un commentaire
+end note
+
+@enduml

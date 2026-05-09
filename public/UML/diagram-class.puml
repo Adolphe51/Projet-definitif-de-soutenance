@@ -1,150 +1,251 @@
-@startuml
-title Diagramme de classes - SIEM sécurisé
+@startuml CyberGuardClassDiagram
+top to bottom direction
+title Diagramme de classes - CyberGuard
+skinparam shadowing false
+skinparam packageStyle rectangle
 
-' =========================
-' UTILISATEUR & AUTH
-' =========================
+package "Authentification et acces" {
+  class User {
+    +id : int
+    +uuid : string
+    +nom : string
+    +email : string
+    +is_active : boolean
+    +last_ip : string
+    +last_login : datetime
+  }
 
-class Utilisateur {
-  +id : int
-  +uuid : string
-  +nom : string
-  +email : string(unique)
-  +motDePasse : string(hashed)
-  +isActive : boolean
-  +otpSecret : string
-  +createdAt : datetime
+  class SecuritySession {
+    +id : uuid
+    +user_id : int
+    +ip_address : string
+    +device_fingerprint : string
+    +expires_at : datetime
+    +last_activity_at : datetime
+    +is_revoked : boolean
+  }
+
+  class AuthCode {
+    +id : uuid
+    +user_id : int
+    +email : string
+    +code_hash : string
+    +expires_at : datetime
+    +attempts : int
+    +used_at : datetime
+  }
+
+  class UserRole {
+    +user_id : int
+    +role : string
+  }
+
+  class Permission {
+    +id : int
+    +nom : string
+    +ressourceType : string
+  }
+
+  class RolePermission {
+    +role : string
+    +permission_id : int
+  }
 }
 
-class SecuritySession {
-  +id : int
-  +userId : int
-  +accessTokenHash : string(unique)
-  +refreshTokenHash : string(unique)
-  +ipAddress : string
-  +userAgent : string
-  +deviceFingerprint : string
-  +expiresAt : datetime
-  +isRevoked : boolean
+package "Mini site metier" {
+  class Usager {
+    +id : uuid
+    +user_code : string
+    +first_name : string
+    +last_name : string
+    +email : string
+    +phone : string
+    +date_of_birth : date
+    +address : text
+    +status : string
+  }
+
+  class ServiceMetier {
+    +id : uuid
+    +service_code : string
+    +title : string
+    +description : text
+    +business_area : string
+    +criticality : int
+    +workflow_cycle : string
+    +target_capacity : int
+    +status : string
+  }
+
+  class RattachementService {
+    +id : uuid
+    +user_id : uuid
+    +service_id : uuid
+    +workflow_cycle : string
+    +linked_at : datetime
+    +relation_code : string
+    +priority_score : decimal
+    +status : string
+  }
+
+  class MessageInterne {
+    +id : uuid
+    +sender_id : uuid
+    +recipient_id : uuid
+    +subject : string
+    +body : text
+    +is_read : boolean
+  }
 }
 
-class Permission {
-  +id : int
-  +nom : string
-  +description : string
-  +ressourceType : string
+package "Detection et supervision" {
+  class DetectionRule {
+    +rule_id : string
+    +name : string
+    +attack_type : string
+    +default_severity : string
+    +enabled : boolean
+    +priority : int
+  }
+
+  class Attack {
+    +id : int
+    +rule_id : string
+    +incident_id : string
+    +type : string
+    +source_ip : string
+    +severity : string
+    +status : string
+    +is_simulation : boolean
+    +alarm_triggered : boolean
+  }
+
+  class Alert {
+    +id : int
+    +attack_id : int
+    +severity : string
+    +type : string
+    +acknowledged : boolean
+  }
+
+  class BlockedIp {
+    +id : int
+    +ip_address : string
+    +reason : string
+    +attack_id : int
+    +blocked_until : datetime
+  }
+
+  class AttackComment {
+    +id : int
+    +attack_id : int
+    +user_id : int
+    +status : string
+    +comment : text
+  }
+
+  class Simulation {
+    +id : int
+    +name : string
+    +attack_type : string
+    +target_ip : string
+    +duration_seconds : int
+    +intensity : string
+    +status : string
+    +packets_sent : int
+  }
 }
 
-class UserRole {
-  +userId : int
-  +role : string
+package "Traçabilite" {
+  class AuditLog {
+    +id : uuid
+    +actor_id : int
+    +action : string
+    +entity_type : string
+    +entity_id : int
+    +old_values : json
+    +new_values : json
+    +metadata : json
+    +resultat : string
+    +importance : string
+    +ip_address : string
+    +created_at : datetime
+  }
 }
 
-class RolePermission {
-  +role : string
-  +permissionId : int
+package "Honeypot secondaire" {
+  class HoneypotTrap {
+    +id : int
+    +name : string
+    +type : string
+    +path : string
+    +status : string
+    +interactions_count : int
+  }
+
+  class HoneypotInteraction {
+    +id : int
+    +honeypot_trap_id : int
+    +source_ip : string
+    +country : string
+    +city : string
+    +method : string
+    +path : string
+    +payload : text
+    +risk_score : int
+  }
 }
 
-' =========================
-' AUDIT
-' =========================
-
-class AuditLog {
-  +id : int
-  +actorId : int
-  +action : string
-  +entityType : string
-  +entityId : int
-  +oldValues : json
-  +newValues : json
-  +ipAddress : string
-  +createdAt : datetime
-}
-
-' =========================
-' COLLECTE DES LOGS
-' =========================
-
-class Source {
-  +id : int
-  +nom : string
-  +type : string
-  +ip : string
-}
-
-class Log {
-  +id : int
-  +sourceId : int
-  +niveau : string
-  +message : text
-  +timestamp : datetime
-}
-
-class Collecteur {
-  +id : int
-  +nom : string
-  +status : string
-}
-
-' =========================
-' ANALYSE
-' =========================
-
-class RegleDetection {
-  +id : int
-  +nom : string
-  +condition : text
-  +niveauGravite : string
-}
-
-class EvenementSecurite {
-  +id : int
-  +logId : int
-  +ruleId : int
-  +type : string
-  +score : int
-  +createdAt : datetime
-}
-
-' =========================
-' ALERTES
-' =========================
-
-class Alerte {
-  +id : int
-  +eventId : int
-  +niveau : string
-  +message : string
-  +status : string
-  +createdAt : datetime
-}
-
-class Notification {
-  +id : int
-  +alerteId : int
-  +canal : string
-  +destinataire : string
-  +envoyeLe : datetime
-}
-
-' =========================
-' RELATIONS
-' =========================
-
-Utilisateur "1" -- "0..*" Session
-Utilisateur "1" -- "0..*" UserRole
-
+User "1" -- "0..*" SecuritySession
+User "1" -- "0..*" AuthCode
+User "1" -- "0..*" UserRole
+User "1" -- "0..*" AttackComment
+User "0..1" -- "0..*" AuditLog : actor
 Permission "1" -- "0..*" RolePermission
+UserRole "1" -- "0..*" RolePermission : role
 
-Utilisateur "1" -- "0..*" AuditLog
+Usager "1" -- "0..*" RattachementService
+ServiceMetier "1" -- "0..*" RattachementService
+Usager "1" -- "0..*" MessageInterne : sender
+Usager "1" -- "0..*" MessageInterne : recipient
 
-Source "1" -- "0..*" Log
-Collecteur "1" -- "0..*" Log
+DetectionRule "1" -- "0..*" Attack : rule_id
+Attack "1" -- "0..*" Alert
+Attack "1" -- "0..*" AttackComment
+Attack "0..1" -- "0..1" BlockedIp
 
-Log "1" -- "0..*" EvenementSecurite
-RegleDetection "1" -- "0..*" EvenementSecurite
+HoneypotTrap "1" -- "0..*" HoneypotInteraction
 
-EvenementSecurite "1" -- "0..*" Alerte
-Alerte "1" -- "0..*" Notification
+note bottom of Usager
+  Le mini site repose sur 4 objets utiles
+  au systeme :
+  usagers, services, rattachements
+  et messages internes.
+end note
+
+note bottom of Attack
+  Cycle de vie :
+  detected -> investigating -> blocked
+  -> false_positive / resolved
+end note
+
+note bottom of AuditLog
+  Le journal d'audit trace notamment :
+  - connexions et OTP
+  - acces refuses
+  - actions du mini site metier
+  - traitements SOC
+end note
+
+note bottom of Simulation
+  Les simulations existent pour la demonstration,
+  mais elles sont declenchees volontairement
+  et non plus automatiquement.
+end note
+
+note bottom of HoneypotTrap
+  Le honeypot est conserve comme
+  composant secondaire de documentation.
+end note
 
 @enduml

@@ -38,7 +38,51 @@ class DashboardStatsTest extends TestCase
                 'alarm_triggered' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
+            [
+                'type' => 'Brute Force',
+                'source_ip' => '198.51.100.2',
+                'target_ip' => '192.168.1.2',
+                'target_port' => '22',
+                'protocol' => 'TCP',
+                'severity' => 'high',
+                'status' => 'blocked',
+                'country' => 'France',
+                'city' => 'Lyon',
+                'latitude' => 45.764,
+                'longitude' => 4.8357,
+                'isp' => 'Test ISP',
+                'packet_count' => 50,
+                'bandwidth_mbps' => 6.5,
+                'payload' => 'ssh',
+                'description' => 'Blocked attack',
+                'is_simulation' => false,
+                'alarm_triggered' => true,
+                'created_at' => now()->subHours(2),
+                'updated_at' => now()->subHour(),
+            ],
+            [
+                'type' => 'SQL Injection',
+                'source_ip' => '198.51.100.3',
+                'target_ip' => '192.168.1.3',
+                'target_port' => '3306',
+                'protocol' => 'TCP',
+                'severity' => 'medium',
+                'status' => 'resolved',
+                'country' => 'Côte d\'Ivoire',
+                'city' => 'Abidjan',
+                'latitude' => 5.3364,
+                'longitude' => -4.0267,
+                'isp' => 'Another ISP',
+                'packet_count' => 25,
+                'bandwidth_mbps' => 2.1,
+                'payload' => 'union select',
+                'description' => 'Resolved incident',
+                'is_simulation' => false,
+                'alarm_triggered' => false,
+                'created_at' => now()->subDay(),
+                'updated_at' => now()->subHours(20),
+            ],
         ]);
 
         DB::table('alerts')->insert([
@@ -55,7 +99,7 @@ class DashboardStatsTest extends TestCase
 
         DB::table('simulations')->insert([
             'name' => 'Sim test',
-            'attack_type' => 'DDoS',
+            'attack_type' => 'XSS',
             'target_ip' => '192.168.1.1',
             'duration_seconds' => 20,
             'intensity' => 'medium',
@@ -115,7 +159,7 @@ class DashboardStatsTest extends TestCase
         $controller = new DashboardController();
         $response = $this->app->call([$controller, 'apiStats']);
 
-        $response->assertStatus(200);
+        $this->assertSame(200, $response->getStatusCode());
         $json = $response->getData(true);
 
         $this->assertArrayHasKey('total_attacks', $json);
@@ -124,5 +168,21 @@ class DashboardStatsTest extends TestCase
         $this->assertArrayHasKey('attacks_per_hour', $json);
         $this->assertArrayHasKey('active_honeypots', $json);
         $this->assertArrayHasKey('recent_honeypots', $json);
+        $this->assertArrayHasKey('block_rate_percent', $json);
+        $this->assertArrayHasKey('mean_resolution_minutes', $json);
+        $this->assertArrayHasKey('trends_24h', $json);
+        $this->assertArrayHasKey('trends_7d', $json);
+        $this->assertArrayHasKey('top_attack_types', $json);
+        $this->assertArrayHasKey('top_source_ips', $json);
+        $this->assertArrayHasKey('top_countries', $json);
+        $this->assertArrayHasKey('attack_chart', $json);
+
+        $this->assertSame(3, $json['total_attacks']);
+        $this->assertEquals(33.3, $json['block_rate_percent']);
+        $this->assertEquals(240.0, $json['mean_resolution_minutes']);
+        $this->assertSame('XSS', $json['top_attack_type']);
+        $this->assertCount(24, $json['trends_24h']['labels']);
+        $this->assertCount(7, $json['trends_7d']['labels']);
+        $this->assertNotEmpty($json['top_attack_types']);
     }
 }

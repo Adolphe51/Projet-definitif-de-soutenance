@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+
 class GeoService
 {
     // Données de géolocalisation simulées réalistes pour la démo
@@ -33,9 +36,47 @@ class GeoService
         ['country' => 'Arabie Saoudite','city' => 'Riyad',        'lat' => 24.7136,  'lon' => 46.6753,  'isp' => 'STC'],
     ];
 
-    public static function lookup(string $ip): array
+    public static function lookup(string $ip, bool $preferRealProvider = true): array
     {
-        // Pour la démo, on génère une géoloc aléatoire basée sur l'IP
+        if (!$preferRealProvider) {
+            return self::lookupSimulated($ip);
+        }
+
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            return self::lookupUnknown($ip);
+        }
+
+        if (!self::isPublicIp($ip)) {
+            return self::lookupPrivateNetwork($ip);
+        }
+
+        $provider = (string) config('cyberguard.geo.provider', 'auto');
+
+        if (in_array($provider, ['auto', 'ipapi', 'ipgeolocation'], true)) {
+            $cacheKey = self::cacheKey($provider, $ip);
+            $cached = Cache::get($cacheKey);
+
+            if ($cached !== null) {
+                return $cached === false ? self::lookupUnknown($ip) : $cached;
+            }
+
+            $resolved = self::resolveRealLocation($provider, $ip);
+            Cache::put(
+                $cacheKey,
+                $resolved ?? false,
+                now()->addSeconds((int) config('cyberguard.geo.cache_ttl', 3600))
+            );
+
+            if ($resolved !== null) {
+                return $resolved;
+            }
+        }
+
+        return self::lookupUnknown($ip);
+    }
+
+    public static function lookupSimulated(string $ip): array
+    {
         $index = abs(crc32($ip)) % count(self::$geoDatabase);
         return self::$geoDatabase[$index];
     }
@@ -65,5 +106,128 @@ class GeoService
     public static function getAllGeoData(): array
     {
         return self::$geoDatabase;
+    }
+
+    private static function resolveRealLocation(string $provider, string $ip): ?array
+    {
+        try {
+            return match ($provider) {
+                'ipgeolocation' => self::resolveViaIpGeolocation($ip),
+                'ipapi', 'auto' => self::resolveViaIpApi($ip) ?? self::resolveViaIpGeolocation($ip),
+                default => null,
+            };
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private static function resolveViaIpApi(string $ip): ?array
+    {
+        $response = Http::timeout((int) config('cyberguard.geo.timeout', 3))
+            ->acceptJson()
+            ->get("https://ipapi.co/{$ip}/json/");
+
+        if (!$response->successful()) {
+            return null;
+        }
+
+        $data = $response->json();
+
+        if (!is_array($data) || isset($data['error'])) {
+            return null;
+        }
+
+        return self::normalize([
+            'country' => $data['country_name'] ?? null,
+            'city' => $data['city'] ?? null,
+            'lat' => $data['latitude'] ?? null,
+            'lon' => $data['longitude'] ?? null,
+            'isp' => $data['org'] ?? $data['asn'] ?? null,
+        ]);
+    }
+
+    private static function resolveViaIpGeolocation(string $ip): ?array
+    {
+        $apiKey = config('cyberguard.geo.api_key');
+
+        if (!$apiKey) {
+            return null;
+        }
+
+        $response = Http::timeout((int) config('cyberguard.geo.timeout', 3))
+            ->acceptJson()
+            ->get('https://api.ipgeolocation.io/ipgeo', [
+                'apiKey' => $apiKey,
+                'ip' => $ip,
+            ]);
+
+        if (!$response->successful()) {
+            return null;
+        }
+
+        $data = $response->json();
+
+        if (!is_array($data)) {
+            return null;
+        }
+
+        return self::normalize([
+            'country' => $data['country_name'] ?? null,
+            'city' => $data['city'] ?? null,
+            'lat' => $data['latitude'] ?? null,
+            'lon' => $data['longitude'] ?? null,
+            'isp' => $data['isp'] ?? $data['organization'] ?? null,
+        ]);
+    }
+
+    private static function lookupPrivateNetwork(string $ip): array
+    {
+        return [
+            'country' => 'Reseau local',
+            'city' => 'Laboratoire local',
+            'lat' => null,
+            'lon' => null,
+            'isp' => "Adresse privee ({$ip})",
+        ];
+    }
+
+    private static function lookupUnknown(string $ip): array
+    {
+        return [
+            'country' => 'Inconnu',
+            'city' => 'Inconnue',
+            'lat' => null,
+            'lon' => null,
+            'isp' => "Resolution indisponible ({$ip})",
+        ];
+    }
+
+    private static function normalize(array $data): ?array
+    {
+        if (empty($data['country']) && empty($data['city']) && empty($data['isp'])) {
+            return null;
+        }
+
+        return [
+            'country' => $data['country'] ?: 'Inconnu',
+            'city' => $data['city'] ?: 'Inconnue',
+            'lat' => is_numeric($data['lat']) ? (float) $data['lat'] : null,
+            'lon' => is_numeric($data['lon']) ? (float) $data['lon'] : null,
+            'isp' => $data['isp'] ?: 'Inconnu',
+        ];
+    }
+
+    private static function isPublicIp(string $ip): bool
+    {
+        return (bool) filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        );
+    }
+
+    private static function cacheKey(string $provider, string $ip): string
+    {
+        return "geo_lookup:{$provider}:{$ip}";
     }
 }

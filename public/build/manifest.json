@@ -1,12 +1,22 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-BP5vQFhu.css",
+    "file": "assets/app-rewDHWkA.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/css/auth.css": {
     "file": "assets/auth-BbOwCG03.css",
     "src": "resources/css/auth.css",
+    "isEntry": true
+  },
+  "resources/css/components.css": {
+    "file": "assets/components-CRWUypaK.css",
+    "src": "resources/css/components.css",
+    "isEntry": true
+  },
+  "resources/css/intranet.css": {
+    "file": "assets/intranet-CXVOqzJM.css",
+    "src": "resources/css/intranet.css",
     "isEntry": true
   },
   "resources/js/app.js": {
@@ -22,9 +32,15 @@
     "isEntry": true
   },
   "resources/js/dash.js": {
-    "file": "assets/dash-_sv4IWJh.js",
+    "file": "assets/dash-DBO5Ku0t.js",
     "name": "dash",
     "src": "resources/js/dash.js",
+    "isEntry": true
+  },
+  "resources/js/intranet.js": {
+    "file": "assets/intranet-xbSEllHA.js",
+    "name": "intranet",
+    "src": "resources/js/intranet.js",
     "isEntry": true
   }
 }

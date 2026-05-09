@@ -238,7 +238,11 @@ class LoginController extends Controller
             'strict'
         );
 
-        return redirect()->route('admin.dashboard')
+        $destination = $result['user']->hasRole('admin')
+            ? route('dashboard')
+            : route('intranet.index');
+
+        return redirect()->to($destination)
             ->withCookie($cookie)
             ->with('success', 'Authentification réussie ! Bienvenue sur CyberGuard.');
     }

@@ -70,7 +70,7 @@ class OTPLoginTest extends TestCase
                 'code' => $code,
             ]);
 
-        $response->assertRedirect(route('admin.dashboard'));
+        $response->assertRedirect(route('dashboard'));
         $this->assertAuthenticatedAs($user);
     }
 

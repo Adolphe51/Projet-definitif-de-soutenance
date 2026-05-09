@@ -6,6 +6,7 @@ use App\Models\HoneypotTrap;
 use App\Models\HoneypotInteraction;
 use App\Models\Alert;
 use App\Models\BlockedIp;
+use App\Services\AutoBlockService;
 use App\Services\GeoService;
 use Closure;
 use Illuminate\Http\Request;
@@ -14,12 +15,22 @@ use Symfony\Component\HttpFoundation\Response;
 
 class HoneypotMiddleware
 {
+    public function __construct(
+        private readonly AutoBlockService $autoBlockService,
+    ) {
+    }
+
     /**
      * Intercepte et enregistre les requêtes vers les pièges honeypot.
      */
     public function handle(Request $request, Closure $next): Response
     {
         $ip = $request->ip() ?? '127.0.0.1';
+        $trapType = $this->resolveTrapType($request);
+
+        if (!$trapType) {
+            return $next($request);
+        }
 
         // Ignorer la whitelist
         $whitelist = config('cyberguard.honeypot.whitelist', ['127.0.0.1', '::1']);
@@ -40,26 +51,15 @@ class HoneypotMiddleware
         }
 
         // Logger la requête dans le système
-        $this->logRequest($request, $ip);
+        $this->logRequest($request, $ip, $trapType);
 
         return $next($request);
     }
 
-    private function logRequest(Request $request, string $ip): void
+    private function logRequest(Request $request, string $ip, string $trapType): void
     {
         try {
-            $trapPaths = config('cyberguard.honeypot.trap_paths', []);
             $path      = '/' . ltrim($request->path(), '/');
-            $trapType  = null;
-
-            foreach ($trapPaths as $trapPath => $type) {
-                if (str_starts_with($path, $trapPath)) {
-                    $trapType = $type;
-                    break;
-                }
-            }
-
-            if (!$trapType) return;
 
             $trap = HoneypotTrap::where('type', $trapType)->first();
             if (!$trap) return;
@@ -96,13 +96,30 @@ class HoneypotMiddleware
             }
 
             // Auto-blocage si score très élevé
-            if ($interaction->risk_score >= 95) {
-                BlockedIp::blockIp($ip, "Auto-bloqué: score honeypot {$interaction->risk_score}/100");
-            }
+            $this->autoBlockService->autoBlockHoneypotIp(
+                $ip,
+                $interaction->risk_score,
+                $path,
+                $trap->id
+            );
 
         } catch (\Throwable $e) {
             Log::error('HoneypotMiddleware error: ' . $e->getMessage());
         }
+    }
+
+    private function resolveTrapType(Request $request): ?string
+    {
+        $trapPaths = config('cyberguard.honeypot.trap_paths', []);
+        $path = '/' . ltrim($request->path(), '/');
+
+        foreach ($trapPaths as $trapPath => $type) {
+            if (str_starts_with($path, $trapPath)) {
+                return $type;
+            }
+        }
+
+        return null;
     }
 
     private function calculateRiskScore(Request $request): int

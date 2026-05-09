@@ -1,0 +1,95 @@
+@startuml CyberGuardClassDiagramD
+top to bottom direction
+title Diagramme de classes - CyberGuard
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+package "Mini site metier" {
+  class Usager {
+    +id : uuid
+    +user_code : string
+    +first_name : string
+    +last_name : string
+    +email : string
+    +phone : string
+    +date_of_birth : date
+    +address : text
+    +status : string
+  }
+
+  class ServiceMetier {
+    +id : uuid
+    +service_code : string
+    +title : string
+    +description : text
+    +business_area : string
+    +criticality : int
+    +workflow_cycle : string
+    +target_capacity : int
+    +status : string
+  }
+
+  class RattachementService {
+    +id : uuid
+    +user_id : uuid
+    +service_id : uuid
+    +workflow_cycle : string
+    +linked_at : datetime
+    +relation_code : string
+    +priority_score : decimal
+    +status : string
+  }
+
+  class MessageInterne {
+    +id : uuid
+    +sender_id : uuid
+    +recipient_id : uuid
+    +subject : string
+    +body : text
+    +is_read : boolean
+  }
+}
+
+package "Honeypot secondaire" {
+  class HoneypotTrap {
+    +id : int
+    +name : string
+    +type : string
+    +path : string
+    +status : string
+    +interactions_count : int
+  }
+
+  class HoneypotInteraction {
+    +id : int
+    +honeypot_trap_id : int
+    +source_ip : string
+    +country : string
+    +city : string
+    +method : string
+    +path : string
+    +payload : text
+    +risk_score : int
+  }
+}
+
+Usager "1" -- "0..*" RattachementService
+ServiceMetier "1" -- "0..*" RattachementService
+Usager "1" -- "0..*" MessageInterne : sender
+Usager "1" -- "0..*" MessageInterne : recipient
+
+HoneypotTrap "1" -- "0..*" HoneypotInteraction
+
+note bottom of Usager
+  Le mini site repose sur 4 objets utiles
+  au systeme :
+  usagers, services, rattachements
+  et messages internes.
+end note
+
+note bottom of HoneypotTrap
+  Le honeypot est conserve comme
+  composant secondaire de documentation.
+end note
+
+@enduml

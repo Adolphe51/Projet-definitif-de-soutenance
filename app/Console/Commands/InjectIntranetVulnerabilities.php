@@ -12,14 +12,14 @@ class InjectIntranetVulnerabilities extends Command
      *
      * @var string
      */
-    protected $signature = 'intranet:vulnerabilities {action : Action to perform (inject|clean|dos|enumeration|xss|bruteforce)}';
+    protected $signature = 'intranet:vulnerabilities {action? : Action to perform (inject|clean|sql|xss|bruteforce)}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Gérer les vulnérabilités de test dans l\'intranet académique';
+    protected $description = 'Gérer les scénarios de test du mini site relié à CyberGuard';
 
     protected IntranetVulnerabilityService $vulnerabilityService;
 
@@ -34,47 +34,49 @@ class InjectIntranetVulnerabilities extends Command
      */
     public function handle()
     {
-        $action = $this->argument('action');
+        $action = (string) ($this->argument('action') ?? '');
 
-        $this->info("🚨 Gestion des vulnérabilités de l'intranet - Action: {$action}");
+        if ($action === '') {
+            $this->components->info('Actions disponibles : inject, clean, sql, xss, bruteforce');
+            $this->line('Exemple : php artisan intranet:vulnerabilities inject');
+
+            return self::SUCCESS;
+        }
+
+        $this->info("Gestion des scenarios de test du mini site - Action: {$action}");
 
         switch ($action) {
             case 'inject':
                 $this->injectAllVulnerabilities();
                 break;
 
+            case 'sql':
+                $this->vulnerabilityService->injectSqlVulnerabilities();
+                $this->info('Donnees SQL injectees');
+                break;
+
             case 'clean':
                 $this->vulnerabilityService->cleanVulnerabilities();
-                $this->info('✅ Données de vulnérabilité nettoyées');
-                break;
-
-            case 'dos':
-                $this->vulnerabilityService->simulateDosAttack();
-                $this->info('✅ Attaque DoS simulée');
-                break;
-
-            case 'enumeration':
-                $this->vulnerabilityService->createUserEnumerationData();
-                $this->info('✅ Données d\'énumération d\'utilisateurs créées');
+                $this->info('Donnees de vulnerabilite nettoyees');
                 break;
 
             case 'xss':
                 $this->vulnerabilityService->injectMaliciousCourseData();
-                $this->info('✅ Données XSS injectées');
+                $this->info('Donnees XSS injectees');
                 break;
 
             case 'bruteforce':
                 $this->vulnerabilityService->createBruteForceScenarios();
-                $this->info('✅ Scénarios de force brute créés');
+                $this->info('Scenarios de force brute crees');
                 break;
 
             default:
-                $this->error('Action non reconnue. Utilisez: inject, clean, dos, enumeration, xss, ou bruteforce');
-                return 1;
+                $this->error('Action non reconnue. Utilisez: inject, clean, sql, xss, ou bruteforce');
+                return self::FAILURE;
         }
 
-        $this->info('🎯 Opération terminée avec succès');
-        return 0;
+        $this->info('Operation terminee avec succes');
+        return self::SUCCESS;
     }
 
     /**
@@ -82,21 +84,15 @@ class InjectIntranetVulnerabilities extends Command
      */
     protected function injectAllVulnerabilities(): void
     {
-        $this->info('Injection des vulnérabilités SQL...');
+        $this->info('Injection des vulnerabilites SQL...');
         $this->vulnerabilityService->injectSqlVulnerabilities();
 
-        $this->info('Création des données d\'énumération...');
-        $this->vulnerabilityService->createUserEnumerationData();
-
-        $this->info('Injection des données XSS...');
+        $this->info('Injection des donnees XSS...');
         $this->vulnerabilityService->injectMaliciousCourseData();
 
-        $this->info('Création des scénarios de force brute...');
+        $this->info('Creation des scenarios de force brute...');
         $this->vulnerabilityService->createBruteForceScenarios();
 
-        $this->info('Simulation d\'attaque DoS...');
-        $this->vulnerabilityService->simulateDosAttack();
-
-        $this->info('✅ Toutes les vulnérabilités ont été injectées');
+        $this->info('Toutes les vulnerabilites ont ete injectees');
     }
 }

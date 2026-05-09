@@ -1,56 +1,51 @@
-@startuml
+@startuml CyberGuardSequenceAuthentification
 autonumber
+title Sequence d'authentification - email, mot de passe, OTP et session securisee
+
 actor "Utilisateur" as User
 participant "Interface Web" as UI
-participant "API Backend" as API
-participant "Service Auth" as Auth
-participant "Base de données" as DB
-participant "Service Audit" as Audit
-participant "Service Notification" as Notif
+participant "LoginController" as Login
+participant "AuthenticationLoggingService" as AuthLog
+participant "OTPService" as OTP
+participant "SecuritySessionService" as SessionService
+participant "Base de donnees" as DB
+participant "Service Mail" as Mail
 
-' ==============================
-' DEMANDE DE CONNEXION
-' ==============================
-User -> UI : Saisir email + mot de passe
-UI -> API : POST /login
+User -> UI : saisir email + mot de passe
+UI -> Login : POST /otp/send
 
-API -> Auth : Vérifier identifiants
-Auth -> DB : Rechercher utilisateur
-DB --> Auth : Données utilisateur
+Login -> DB : rechercher User par email
+DB --> Login : utilisateur
 
-alt Identifiants invalides
-    Auth -> Audit : Log échec connexion
-    Auth --> API : Erreur authentification
-    API --> UI : Message erreur
-    UI --> User : Accès refusé
-else Identifiants valides
-    Auth -> Auth : Générer code 2FA
-    Auth -> DB : Sauvegarder code (hash)
-    Auth -> Notif : Envoyer code (email/SMS)
+alt identifiants invalides
+  Login -> AuthLog : journaliser echec
+  Login --> UI : erreur d'authentification
+else identifiants valides
+  Login -> AuthLog : journaliser succes etape 1
+  Login -> OTP : sendOtp(email, request)
+  OTP -> DB : invalider anciens codes
+  OTP -> DB : creer AuthCode
+  OTP -> Mail : envoyer OTP
+  OTP --> Login : OTP envoye
+  Login --> UI : redirection vers /otp/verify
 
-    API --> UI : Demande code 2FA
-    UI --> User : Saisir code
+  User -> UI : saisir le code OTP
+  UI -> Login : POST /otp/verify
+  Login -> OTP : verifyOtp(email, code, request)
+  OTP -> DB : lire AuthCode valide
 
-    User -> UI : Entrer code 2FA
-    UI -> API : POST /verify-2fa
-
-    API -> Auth : Vérifier code
-    Auth -> DB : Comparer code
-
-    alt Code invalide
-        Auth -> Audit : Log échec 2FA
-        Auth --> API : Refus
-        API --> UI : Erreur
-    else Code valide
-        Auth -> Auth : Générer tokens (JWT)
-        Auth -> DB : Créer session
-
-        Auth -> Audit : Log succès connexion
-
-        Auth --> API : Token accès + refresh
-        API --> UI : Auth réussie
-        UI --> User : Accès accordé
-    end
+  alt code invalide ou expire
+    OTP -> AuthLog : journaliser echec OTP
+    OTP --> Login : refus
+    Login --> UI : message d'erreur
+  else code valide
+    OTP -> DB : marquer AuthCode comme utilise
+    Login -> AuthLog : journaliser succes OTP
+    Login -> SessionService : createSession(user, request)
+    SessionService -> DB : creer SecuritySession
+    SessionService --> Login : access_token + refresh_token
+    Login --> UI : cookie access_token + redirection dashboard
+  end
 end
 
 @enduml

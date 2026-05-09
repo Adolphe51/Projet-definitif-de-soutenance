@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Pagination\Paginator;
 use App\Models\Alert;
 use App\Events\IntranetDataChanged;
 use App\Listeners\ProcessIntranetDataChange;
@@ -35,10 +36,12 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        Paginator::defaultView('vendor.pagination.cyberguard');
+        Paginator::defaultSimpleView('vendor.pagination.cyberguard-simple');
+
         // Partager le nombre d'alertes non lues avec toutes les vues
         View::composer('layouts.app', function ($view) {
-            $unreadAlerts = Alert::where('acknowledged', false)->count();
-            $view->with('globalUnreadAlerts', $unreadAlerts);
+            $view->with('globalUnreadAlerts', Alert::getCachedUnreadCount());
         });
     }
 }

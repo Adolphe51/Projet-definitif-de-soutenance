@@ -1,80 +1,89 @@
 @extends('layouts.app')
 
-@section('title', 'Intranet Académique')
+@section('title', 'Mini Site Métier')
+@section('page-title', 'Mini site métier')
+@section('page-subtitle', 'Zone applicative sécurisée utilisée pendant la soutenance pour montrer connexion protégée, actions auditées et remontée d’événements vers CyberGuard.')
 
 @section('content')
-    <div class="container mx-auto px-4 py-8">
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h1 class="text-3xl font-bold text-gray-800 mb-6">Intranet Académique</h1>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Étudiants -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h2 class="text-xl font-semibold text-blue-800 mb-2">Étudiants</h2>
-                    <p class="text-blue-600 mb-4">Gérer les informations des étudiants</p>
-                    <a href="{{ route('intranet.students.index') }}"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-                        Voir les étudiants
-                    </a>
-                </div>
-
-                <!-- Cours -->
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h2 class="text-xl font-semibold text-green-800 mb-2">Cours</h2>
-                    <p class="text-green-600 mb-4">Gérer les cours et programmes</p>
-                    <a href="{{ route('intranet.courses.index') }}"
-                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
-                        Voir les cours
-                    </a>
-                </div>
-
-                <!-- Messages -->
-                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h2 class="text-xl font-semibold text-purple-800 mb-2">Messages</h2>
-                    <p class="text-purple-600 mb-4">Communications internes</p>
-                    <a href="{{ route('intranet.messages.index') }}"
-                        class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded">
-                        Voir les messages
-                    </a>
-                </div>
-
-                <!-- Inscriptions -->
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h2 class="text-xl font-semibold text-yellow-800 mb-2">Inscriptions</h2>
-                    <p class="text-yellow-600 mb-4">Gérer les inscriptions aux cours</p>
-                    <a href="{{ route('intranet.enrollments.index') }}"
-                        class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">
-                        Voir les inscriptions
-                    </a>
-                </div>
-
-                <!-- Présences -->
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h2 class="text-xl font-semibold text-red-800 mb-2">Présences</h2>
-                    <p class="text-red-600 mb-4">Suivre les présences aux cours</p>
-                    <a href="{{ route('intranet.attendances.index') }}"
-                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
-                        Voir les présences
-                    </a>
-                </div>
-
-                <!-- Ressources -->
-                <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                    <h2 class="text-xl font-semibold text-indigo-800 mb-2">Ressources</h2>
-                    <p class="text-indigo-600 mb-4">Matériels pédagogiques</p>
-                    <a href="#" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">
-                        Voir les ressources
-                    </a>
-                </div>
-            </div>
-
-            <div class="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h3 class="text-lg font-semibold text-gray-800 mb-2">⚠️ Zone de Test Sécurisé</h3>
-                <p class="text-gray-600">
-                    Cet intranet est un environnement de test isolé pour CyberGuard.
-                    Toutes les données sont fictives et générées automatiquement.
-                </p>
+    <section class="dashboard-hero">
+        <div class="dashboard-hero-copy">
+            <span class="dashboard-chip">Parcours démonstration</span>
+            <h2>Un mini site simple, crédible et directement relié au SOC CyberGuard.</h2>
+            <p>
+                L’idée n’est pas de multiplier les modules, mais de montrer un flux clair :
+                connexion sécurisée, action métier, audit, détection éventuelle, puis analyse dans le dashboard.
+            </p>
+            <div class="dashboard-actions">
+                <a href="{{ route('intranet.students.index') }}" class="btn btn-primary">Ouvrir les usagers</a>
+                @if(auth()->user()?->hasRole('admin'))
+                    <a href="{{ route('dashboard') }}" class="btn btn-secondary-outline">Retour au dashboard</a>
+                @endif
             </div>
         </div>
-    </div>
+
+        <div class="dashboard-health dashboard-health--low">
+            <div class="dashboard-health-label">Zone sécurisée</div>
+            <div class="dashboard-health-value">Journalisation active</div>
+            <div class="dashboard-health-meta">
+                Les actions sensibles effectuées ici peuvent alimenter l’audit et, si besoin, des alertes corrélées dans CyberGuard.
+            </div>
+            <div class="dashboard-health-stats">
+                <div>
+                    <strong>OTP</strong>
+                    <span>entrée sécurisée</span>
+                </div>
+                <div>
+                    <strong>Audit</strong>
+                    <span>suivi des actions</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="intranet-collection-grid">
+        <article class="intranet-collection-card">
+            <span>Module 01</span>
+            <strong>Usagers</strong>
+            <p>Profils, coordonnées et états exploitables pour illustrer les habilitations et l’audit métier.</p>
+            <div class="intranet-page-actions">
+                <a href="{{ route('intranet.students.index') }}" class="btn btn-primary btn-sm">Ouvrir</a>
+            </div>
+        </article>
+
+        <article class="intranet-collection-card intranet-collection-card--green">
+            <span>Module 02</span>
+            <strong>Services</strong>
+            <p>Catalogue métier réduit servant de support aux scénarios SQL Injection et à la traçabilité des modifications.</p>
+            <div class="intranet-page-actions">
+                <a href="{{ route('intranet.courses.index') }}" class="btn btn-primary btn-sm">Ouvrir</a>
+            </div>
+        </article>
+
+        <article class="intranet-collection-card intranet-collection-card--amber">
+            <span>Module 03</span>
+            <strong>Messages</strong>
+            <p>Contenus internes et échanges libres utiles pour montrer la détection XSS et la remontée d’alertes contextualisées.</p>
+            <div class="intranet-page-actions">
+                <a href="{{ route('intranet.messages.index') }}" class="btn btn-primary btn-sm">Ouvrir</a>
+            </div>
+        </article>
+    </section>
+
+    <section class="intranet-summary-grid">
+        <div class="intranet-metric">
+            <span>Étape 1</span>
+            <strong>Connexion sécurisée</strong>
+            <p class="intranet-empty-text">Authentification OTP puis ouverture d’une session protégée.</p>
+        </div>
+        <div class="intranet-metric">
+            <span>Étape 2</span>
+            <strong>Action métier</strong>
+            <p class="intranet-empty-text">Consultation, création ou modification d’une donnée sur le mini site.</p>
+        </div>
+        <div class="intranet-metric">
+            <span>Étape 3</span>
+            <strong>Analyse CyberGuard</strong>
+            <p class="intranet-empty-text">Audit, détection, création d’alerte et suivi sur le dashboard ou la liste d’incidents.</p>
+        </div>
+    </section>
 @endsection

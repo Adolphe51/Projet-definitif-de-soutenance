@@ -1,0 +1,46 @@
+@startuml CyberGuardSequenceHoneypot
+autonumber
+title Sequence honeypot - piege public, interaction et alerte secondaire
+
+actor "Attaquant / Bot" as Attacker
+participant "Route piege publique" as TrapRoute
+participant "HoneypotMiddleware" as HoneypotMW
+participant "GeoService" as Geo
+participant "HoneypotTrap" as Trap
+participant "HoneypotInteraction" as Interaction
+participant "Alert" as AlertModel
+participant "AutoBlockService" as AutoBlock
+participant "BlockedIp" as BlockedIp
+participant "Vue piege / faux service" as FakeView
+
+Attacker -> TrapRoute : requete vers /admin ou /phpmyadmin
+TrapRoute -> HoneypotMW : interception
+
+HoneypotMW -> BlockedIp : verifier IP deja bloquee
+
+alt IP deja bloquee
+  HoneypotMW --> Attacker : reponse 403
+else IP non bloquee
+  HoneypotMW -> Trap : retrouver le piege
+  HoneypotMW -> Geo : lookup(ip)
+  Geo --> HoneypotMW : pays / ville / coordonnees
+  HoneypotMW -> Interaction : creer interaction
+  HoneypotMW -> Trap : increment interactions_count\n+ mise a jour last_triggered_at
+
+  alt comportement actif ou POST
+    HoneypotMW -> AlertModel : creer alerte honeypot
+    HoneypotMW -> AutoBlock : autoBlockHoneypotIp(ip, risk_score, path, trap_id)
+  else simple visite
+    HoneypotMW --> FakeView : afficher le faux service
+  end
+
+  FakeView --> Attacker : faux panneau d'administration
+end
+
+note over HoneypotMW
+  Ce module reste disponible,
+  mais n'est plus central dans
+  le parcours principal de soutenance.
+end note
+
+@enduml

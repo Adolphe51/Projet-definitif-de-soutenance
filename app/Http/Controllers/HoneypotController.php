@@ -65,14 +65,6 @@ class HoneypotController extends Controller
 
     public function liveStats(): JsonResponse
     {
-        // Simuler automatiquement une interaction ~20% du temps
-        if (rand(1, 100) <= 20) {
-            $activeTraps = HoneypotTrap::where('status', 'active')->pluck('id');
-            if ($activeTraps->isNotEmpty()) {
-                HoneypotService::simulateInteraction($activeTraps->random());
-            }
-        }
-
         $recent = HoneypotInteraction::with('trap')
             ->orderByDesc('created_at')
             ->limit(5)
@@ -103,22 +95,8 @@ class HoneypotController extends Controller
 
     // ---- Pages appâts accessibles depuis le web (pièges réels) ----
 
-    public function fakeLogin(Request $request)
-    {
-        self::logWebInteraction($request, 'fake_login', '/login');
-
-        if ($request->isMethod('post')) {
-            $this->captureCredentials($request, 'fake_login');
-            // Simuler un "chargement" puis redirection vers une page d'erreur
-            return view('honeypot.traps.fake_error')->with('message', 'Identifiants incorrects. Votre IP a été enregistrée.');
-        }
-        return view('honeypot.traps.fake_login');
-    }
-
     public function fakeAdmin(Request $request)
     {
-        self::logWebInteraction($request, 'fake_admin', '/admin');
-
         if ($request->isMethod('post')) {
             $this->captureCredentials($request, 'fake_admin');
             return view('honeypot.traps.fake_admin_success');
@@ -128,67 +106,11 @@ class HoneypotController extends Controller
 
     public function fakePhpMyAdmin(Request $request)
     {
-        self::logWebInteraction($request, 'fake_phpmyadmin', '/phpmyadmin');
-
         if ($request->isMethod('post')) {
             $this->captureCredentials($request, 'fake_phpmyadmin');
             return view('honeypot.traps.fake_db_panel');
         }
         return view('honeypot.traps.fake_phpmyadmin');
-    }
-
-    public function fakeWordpressLogin(Request $request)
-    {
-        self::logWebInteraction($request, 'fake_wordpress', '/wp-admin');
-
-        if ($request->isMethod('post')) {
-            $this->captureCredentials($request, 'fake_wordpress');
-            return redirect()->back()->with('error', 'ERROR: Invalid username or password.');
-        }
-        return view('honeypot.traps.fake_wordpress');
-    }
-
-    public function fakeApiEndpoint(Request $request, $path = '')
-    {
-        self::logWebInteraction($request, 'fake_api', '/api/' . $path);
-        $datasets = \App\Services\HoneypotService::getFakeDataset('api_keys');
-        return response()->json([
-            'status'  => 'success',
-            'data'    => $datasets,
-            'warning' => 'THIS IS A HONEYPOT. Your IP has been logged.',
-        ], 200);
-    }
-
-    public function canaryToken(Request $request)
-    {
-        self::logWebInteraction($request, 'canary_token', '/internal/confidential.pdf');
-        return view('honeypot.traps.canary_document');
-    }
-
-    private static function logWebInteraction(Request $request, string $type, string $path): void
-    {
-        $ip   = $request->ip() ?? '0.0.0.0';
-        $geo  = GeoService::lookup($ip);
-        $trap = HoneypotTrap::where('type', $type)->first();
-        if (!$trap) return;
-
-        HoneypotInteraction::create([
-            'honeypot_trap_id' => $trap->id,
-            'source_ip'        => $ip,
-            'country'          => $geo['country'],
-            'city'             => $geo['city'],
-            'latitude'         => $geo['lat'],
-            'longitude'        => $geo['lon'],
-            'isp'              => $geo['isp'],
-            'method'           => $request->method(),
-            'path'             => $path,
-            'user_agent'       => $request->userAgent(),
-            'payload'          => json_encode($request->except(['_token', 'password'])),
-            'risk_score'       => 75,
-        ]);
-
-        $trap->increment('interactions_count');
-        $trap->update(['last_triggered_at' => now(), 'status' => 'triggered']);
     }
 
     private function captureCredentials(Request $request, string $type): void
@@ -203,22 +125,38 @@ class HoneypotController extends Controller
             'password' => $request->input('password') ?? $request->input('pwd') ?? '?',
         ];
 
-        HoneypotInteraction::create([
-            'honeypot_trap_id'      => $trap->id,
-            'source_ip'             => $ip,
-            'country'               => $geo['country'],
-            'city'                  => $geo['city'],
-            'latitude'              => $geo['lat'],
-            'longitude'             => $geo['lon'],
-            'isp'                   => $geo['isp'],
-            'method'                => 'POST',
-            'path'                  => $request->path(),
-            'user_agent'            => $request->userAgent(),
-            'payload'               => $request->except(['_token', 'password']),
-            'credentials_attempted' => $creds,
-            'actions_taken'         => ['Soumission formulaire', 'Tentative authentification'],
-            'risk_score'            => 90,
-        ]);
+        // The HoneypotMiddleware already created an interaction for this request.
+        // We enrich that row instead of creating a duplicate.
+        $interaction = HoneypotInteraction::where('honeypot_trap_id', $trap->id)
+            ->where('source_ip', $ip)
+            ->where('created_at', '>=', now()->subSeconds(15))
+            ->orderByDesc('id')
+            ->first();
+
+        if ($interaction) {
+            $interaction->update([
+                'credentials_attempted' => $creds,
+                'actions_taken'         => ['Soumission formulaire', 'Tentative authentification'],
+                'risk_score'            => max((int) $interaction->risk_score, 90),
+            ]);
+        } else {
+            HoneypotInteraction::create([
+                'honeypot_trap_id'      => $trap->id,
+                'source_ip'             => $ip,
+                'country'               => $geo['country'],
+                'city'                  => $geo['city'],
+                'latitude'              => $geo['lat'],
+                'longitude'             => $geo['lon'],
+                'isp'                   => $geo['isp'],
+                'method'                => 'POST',
+                'path'                  => $request->path(),
+                'user_agent'            => $request->userAgent(),
+                'payload'               => json_encode($request->except(['_token', 'password'])),
+                'credentials_attempted' => $creds,
+                'actions_taken'         => ['Soumission formulaire', 'Tentative authentification'],
+                'risk_score'            => 90,
+            ]);
+        }
 
         \App\Models\Alert::create([
             'title'    => "🍯 CREDENTIALS CAPTURÉS — {$trap->name}",

@@ -60,12 +60,6 @@ class PermissionSeeder extends Seeder
                 'admin.roles',
                 'admin.settings',
             ],
-            'analyst' => [
-                'users.list',
-                'alerts.list',
-                'alerts.export',
-                'audit.view',
-            ],
         ];
 
         foreach ($matrix as $role => $permNames) {

@@ -1,24 +1,46 @@
-{{-- fake_error.blade.php --}}
 <!DOCTYPE html>
-<html>
-<head><title>403 Forbidden</title>
-<style>
-    body { background:#1a1a1a; color:#e0e0e0; font-family:monospace; display:flex; align-items:center; justify-content:center; min-height:100vh; text-align:center; }
-    .box { padding:40px; }
-    h1 { font-size:80px; color:#ff4444; margin-bottom:8px; }
-    h2 { font-size:20px; color:#ff8888; margin-bottom:16px; }
-    p  { color:#888; font-size:14px; line-height:2; }
-    .ip { color:#00e5ff; }
-    .log-id { background:#333; padding:4px 10px; border-radius:4px; font-size:12px; color:#ffd600; }
-</style>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Access denied</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: Arial, sans-serif;
+        }
+
+        .panel {
+            width: min(560px, calc(100% - 32px));
+            padding: 32px;
+            border: 1px solid rgba(248, 113, 113, 0.35);
+            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.92);
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.45);
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 1.5rem;
+            color: #f87171;
+        }
+
+        p {
+            margin: 0;
+            line-height: 1.6;
+            color: #cbd5e1;
+        }
+    </style>
 </head>
 <body>
-    <div class="box">
-        <h1>403</h1>
-        <h2>⚠ Access Forbidden</h2>
-        <p>Your IP address <span class="ip">{{ request()->ip() }}</span> has been flagged.</p>
-        <p>{{ $message ?? 'Authentication failed. This attempt has been logged.' }}</p>
-        <p>Incident Reference: <span class="log-id">CG-{{ strtoupper(substr(md5(now()->timestamp), 0, 8)) }}</span></p>
-    </div>
+    <section class="panel">
+        <h1>Access denied</h1>
+        <p>{{ $message ?? 'Your request could not be processed.' }}</p>
+    </section>
 </body>
 </html>

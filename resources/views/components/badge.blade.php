@@ -1,4 +1,6 @@
 <!-- Ressource: resources/views/components/badge.blade.php -->
-<span class="badge badge-{{ $type ?? 'primary' }}">
+@props(['type' => null])
+
+<span {{ $attributes->class(['badge', $type ? 'badge-' . $type : null]) }}>
     {{ $slot }}
 </span>

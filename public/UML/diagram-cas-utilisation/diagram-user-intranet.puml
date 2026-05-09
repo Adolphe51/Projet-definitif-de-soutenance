@@ -1,0 +1,64 @@
+@startuml CyberGuardMiniSite
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Utilisateur du mini site" as BusinessUser
+actor "CyberGuard" as Platform
+
+rectangle "Diagramme de cas d'utilisation Mini site metier - CyberGuard" {
+  usecase "S'authentifier (email + mot de passe + OTP)" as UC_Login
+  usecase "Acceder au mini site avec session securisee" as UC_Access
+  usecase "Consulter et gerer les fiches usagers" as UC_Users
+  usecase "Consulter et gerer le catalogue des services" as UC_Services
+  usecase "Consulter et suivre les rattachements metier" as UC_Assignments
+  usecase "Consulter et traiter les messages internes" as UC_Messages
+  usecase "Creer, modifier ou supprimer une donnee metier" as UC_Edit
+  usecase "Declencher la journalisation" as UC_Audit
+  usecase "Provoquer une detection si le contenu est suspect" as UC_Detect
+  usecase "Se deconnecter" as UC_Logout
+}
+
+BusinessUser --> UC_Login
+BusinessUser --> UC_Users
+BusinessUser --> UC_Services
+BusinessUser --> UC_Assignments
+BusinessUser --> UC_Messages
+BusinessUser --> UC_Edit
+BusinessUser --> UC_Logout
+
+UC_Users .> UC_Access : <<include>>
+UC_Services .> UC_Access : <<include>>
+UC_Assignments .> UC_Access : <<include>>
+UC_Messages .> UC_Access : <<include>>
+UC_Edit .> UC_Access : <<include>>
+UC_Access .> UC_Login : <<include>>
+UC_Edit .> UC_Audit : <<include>>
+UC_Edit .> UC_Detect : <<extend>>
+
+Platform --> UC_Audit
+Platform --> UC_Detect
+
+note bottom of UC_Assignments
+  Exemples de relations metier presentes
+  dans la demo :
+  affecter un usager a un service,
+  valider un acces, retirer un acces.
+end note
+
+note bottom of UC_Access
+  Prefixe technique protege :
+  /intranet/*
+  Chaine de securite :
+  csrf, blocked.ip, session.security,
+  ip.authorized et audit.
+end note
+
+note bottom of UC_Detect
+  Cas principalement assumes :
+  SQL Injection et XSS
+  sur un formulaire, un message
+  ou une description de service.
+end note
+
+@enduml

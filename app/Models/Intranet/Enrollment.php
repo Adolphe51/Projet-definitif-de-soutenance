@@ -13,18 +13,19 @@ class Enrollment extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    // 🔐 CORRECTION : Ajouter 'id' dans fillable (la migration utilise UUID)
     protected $fillable = [
         'id',
         'student_id',
         'course_id',
         'semester',
+        'enrollment_date',
         'grade',
         'final_score',
         'status'
     ];
 
     protected $casts = [
+        'enrollment_date' => 'datetime',
         'final_score' => 'decimal:2',
     ];
 
@@ -37,10 +38,5 @@ class Enrollment extends Model
     public function course()
     {
         return $this->belongsTo(Course::class);
-    }
-
-    public function attendances()
-    {
-        return $this->hasMany(Attendance::class);
     }
 }

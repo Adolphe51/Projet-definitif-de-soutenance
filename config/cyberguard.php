@@ -13,6 +13,48 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Mode Démo vs Environnement Production
+    |--------------------------------------------------------------------------
+    
+    DOCUMENTATION: À lire avant de comprendre la configuration
+    
+    **Mode Démo** (local development / presentations) :
+    - Variables d'env: DEMO_AUTO_ATTACKS=false, HONEYPOT_DEMO_MODE=false
+    - Comportement:
+      * Le dashboard affiche les événements déjà collectés
+      * Les simulations sont lancées volontairement depuis le laboratoire
+      * Le honeypot reste secondaire et non central dans la démonstration
+      * GeoService retourne des données locales (base de données)
+    - Entrées de données: seed de démonstration, actions métier auditées, simulations manuelles
+    - Cas d'usage: présentations, développement, démo orales
+    
+    **Environnement Production** (APP_ENV=production) :
+    - Variables d'env: DEMO_AUTO_ATTACKS=false
+    - Comportement:
+      * Aucune génération d'attaque aléatoire
+      * Dashboard affiche uniquement les données réelles
+      * Honeypot ne simule pas, enregistre les attaques réelles
+      * Seeder refusé (ou génère minimum de données)
+      * GeoService appelle vraies APIs si configuré
+    - Entrées de données: événements réels uniquement
+    - Audit: tous les changements loggés
+    
+    **Variables clés à contrôler** :
+    - DEMO_AUTO_ATTACKS : conservé pour compatibilité mais désactivé dans le parcours recommandé
+    - APP_ENV : démarcation environnement (local/testing/production)
+    - GEO_PROVIDER : local (données simulées) vs api réelles
+    
+    |--------------------------------------------------------------------------
+    */
+
+    'mode' => [
+        // À quel moment est-on en "mode démo simulé" ?
+        'is_demo' => env('DEMO_AUTO_ATTACKS', env('APP_ENV') === 'local'),
+        'is_production' => env('APP_ENV') === 'production',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Authentification
     |--------------------------------------------------------------------------
     */
@@ -42,23 +84,99 @@ return [
         // Intervalle de scan en secondes (pour les commandes planifiées)
         'scan_interval' => env('DETECTION_INTERVAL', 5),
 
-        // Mode démo : génère des attaques aléatoires
-        'demo_mode'    => env('DEMO_AUTO_ATTACKS', true),
+        // Mode démo : compatibilité conservée, génération automatique désactivée dans l'application
+        'demo_mode'    => env('DEMO_AUTO_ATTACKS', false),
         'demo_rate'    => (int) env('DEMO_ATTACK_RATE', 30), // % de chance par polling
+
+        // Périmètre volontairement resserré pour la soutenance
+        'focused_rule_ids' => [
+            'brute_force_ssh',
+            'sql_injection',
+            'xss_attempt',
+        ],
 
         // Types d'attaques surveillés
         'monitored_types' => [
-            'DDoS', 'SQL Injection', 'XSS', 'Brute Force',
-            'Port Scan', 'Ransomware', 'Phishing', 'MITM',
-            'Buffer Overflow', 'DNS Spoofing', 'ARP Poisoning', 'Zero Day',
+            'Brute Force',
+            'SQL Injection',
+            'XSS',
         ],
 
         // Règles d'auto-blocage
         'auto_block' => [
-            'enabled'         => true,
-            'threshold_count' => 5,    // Nombre d'attaques depuis une même IP avant blocage auto
-            'window_minutes'  => 10,   // Dans quelle fenêtre de temps
+            'enabled' => env('CYBERGUARD_AUTO_BLOCK_ENABLED', true),
+            'apply_to_simulations' => env('CYBERGUARD_AUTO_BLOCK_SIMULATIONS', false),
+            'default_threshold_count' => 5,
+            'default_window_minutes' => 10,
+            'default_block_minutes' => 60,
+            'permanent_severities' => ['critical'],
+            'allowlist' => array_values(array_filter(array_map('trim', explode(',', (string) env('CYBERGUARD_AUTO_BLOCK_ALLOWLIST', '127.0.0.1,::1'))))),
+            'trusted_admin_ips' => array_values(array_filter(array_map('trim', explode(',', (string) env('CYBERGUARD_TRUSTED_ADMIN_IPS', '127.0.0.1,::1'))))),
+            'admin_route_prefixes' => [
+                'dashboard',
+                'attacks',
+                'alerts',
+                'honeypot',
+                'geo',
+                'simulations',
+                'api/stats',
+                'api/live-attacks',
+                'api/geo-data',
+            ],
+            'per_rule' => [
+                'brute_force_ssh' => [
+                    'threshold_count' => 3,
+                    'window_minutes' => 10,
+                    'block_minutes' => 30,
+                ],
+                'sql_injection' => [
+                    'threshold_count' => 2,
+                    'window_minutes' => 15,
+                    'block_minutes' => 45,
+                ],
+                'xss_attempt' => [
+                    'threshold_count' => 3,
+                    'window_minutes' => 20,
+                    'block_minutes' => 30,
+                ],
+            ],
+            'per_type' => [
+                'Brute Force' => [
+                    'threshold_count' => 3,
+                    'window_minutes' => 10,
+                    'block_minutes' => 30,
+                ],
+                'SQL Injection' => [
+                    'threshold_count' => 2,
+                    'window_minutes' => 15,
+                    'block_minutes' => 45,
+                ],
+                'XSS' => [
+                    'threshold_count' => 3,
+                    'window_minutes' => 20,
+                    'block_minutes' => 30,
+                ],
+            ],
+            'honeypot' => [
+                'risk_score_threshold' => 95,
+                'block_minutes' => 120,
+                'permanent' => false,
+            ],
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mini Site Métier
+    |--------------------------------------------------------------------------
+    */
+    'mini_site' => [
+        'visible_features' => [
+            'users',
+            'services',
+            'messages',
+        ],
+        'refresh_on_seed' => env('CYBERGUARD_MINI_SITE_REFRESH_ON_SEED', env('APP_ENV') !== 'production'),
     ],
 
     /*
@@ -70,14 +188,14 @@ return [
         'enabled'     => env('HONEYPOT_ENABLED', true),
         'log_all'     => env('HONEYPOT_LOG_ALL', true),
         'alert_email' => env('HONEYPOT_ALERT_EMAIL', null),
+        // Simulation automatique (UI + scheduler). Désactive en prod si besoin.
+        'demo_mode'   => env('HONEYPOT_DEMO_MODE', env('DEMO_AUTO_ATTACKS', false)),
+        'demo_rate'   => (int) env('HONEYPOT_DEMO_RATE', 20), // % de chance par polling (live-stats)
 
         // Chemins des pièges (URLs accessibles)
         'trap_paths' => [
-            '/wp-admin'                  => 'fake_wordpress',
             '/phpmyadmin'                => 'fake_phpmyadmin',
             '/admin'                     => 'fake_admin',
-            '/api/v1'                    => 'fake_api',
-            '/internal/confidential.pdf' => 'canary_token',
         ],
 
         // IPs toujours ignorées par le honeypot (localhost, etc.)
@@ -93,9 +211,10 @@ return [
     |--------------------------------------------------------------------------
     */
     'geo' => [
-        'provider' => env('GEO_PROVIDER', 'local'),  // local | ipgeolocation | ipapi
+        'provider' => env('GEO_PROVIDER', 'auto'),  // auto | local | ipgeolocation | ipapi
         'api_key'  => env('GEO_API_KEY', null),
         'cache_ttl' => 3600, // secondes
+        'timeout' => 3,
 
         // Pays considérés à haut risque
         'high_risk_countries' => [

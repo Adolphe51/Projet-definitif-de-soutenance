@@ -9,6 +9,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Auth;
 
 class IntranetDataChanged implements ShouldBroadcast
 {
@@ -19,17 +20,26 @@ class IntranetDataChanged implements ShouldBroadcast
     public array $data;
     public string $ipAddress;
     public string $userAgent;
+    public ?int $actorId = null;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(string $entityType, string $action, array $data = [], string $ipAddress = '', string $userAgent = '')
+    public function __construct(
+        string $entityType,
+        string $action,
+        array $data = [],
+        string $ipAddress = '',
+        string $userAgent = '',
+        ?int $actorId = null
+    )
     {
         $this->entityType = $entityType;
         $this->action = $action;
         $this->data = $data;
         $this->ipAddress = $ipAddress ?: request()->ip();
         $this->userAgent = $userAgent ?: request()->userAgent();
+        $this->actorId = $actorId ?? Auth::id();
     }
 
     /**
@@ -63,6 +73,7 @@ class IntranetDataChanged implements ShouldBroadcast
             'data' => $this->data,
             'ip_address' => $this->ipAddress,
             'user_agent' => $this->userAgent,
+            'actor_id' => $this->actorId,
             'timestamp' => now()->toISOString(),
         ];
     }

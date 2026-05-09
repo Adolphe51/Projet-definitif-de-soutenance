@@ -9,7 +9,6 @@ use App\Services\AttackDetectionService;
 use App\Services\Audit\AuditServiceWrapper;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class ProcessIntranetDataChange implements ShouldQueue
@@ -39,13 +38,14 @@ class ProcessIntranetDataChange implements ShouldQueue
             AuditResult::Autorise,
             AuditImportance::Moyenne,
             [
-                'user' => Auth::user(),
+                'actorId' => $event->actorId,
                 'entityId' => $event->data['id'] ?? null,
                 'oldValues' => null,
                 'newValues' => $event->data,
                 'ipAddress' => $event->ipAddress,
                 'metadata' => [
                     'user_agent' => $event->userAgent,
+                    'event_actor_id' => $event->actorId,
                 ],
             ]
         );
@@ -67,40 +67,24 @@ class ProcessIntranetDataChange implements ShouldQueue
     {
         $data = $event->data;
         $ip = $event->ipAddress;
+        $payload = $this->flattenPayload($data);
 
         // Détection d'injection SQL potentielle dans les données
         if ($this->containsSqlInjectionPatterns($data)) {
-            $this->attackDetectionService->detectAttack('sql_injection', [
+            $this->attackDetectionService->detectAttack('SQL Injection', [
                 'source' => 'intranet_' . $event->entityType,
-                'data' => $data,
+                'payload' => $payload,
                 'ip_address' => $ip,
+                'description' => "Pattern SQL suspect sur {$event->entityType} ({$event->action})",
             ]);
         }
 
-        // Détection de tentatives de modification massive
-        if ($event->action === 'update' && $this->isBulkUpdate($data)) {
-            $this->attackDetectionService->detectAttack('bulk_data_manipulation', [
+        if ($this->containsXssPatterns($data)) {
+            $this->attackDetectionService->detectAttack('XSS', [
                 'source' => 'intranet_' . $event->entityType,
-                'data' => $data,
+                'payload' => $payload,
                 'ip_address' => $ip,
-            ]);
-        }
-
-        // Détection d'accès non autorisé aux ressources sensibles
-        if ($event->entityType === 'resource' && $event->action === 'download') {
-            $this->attackDetectionService->detectAttack('unauthorized_access', [
-                'source' => 'intranet_resource',
-                'resource_id' => $data['id'] ?? null,
-                'ip_address' => $ip,
-            ]);
-        }
-
-        // Détection de tentatives d'énumération d'utilisateurs
-        if ($event->entityType === 'student' && $event->action === 'search') {
-            $this->attackDetectionService->detectAttack('user_enumeration', [
-                'source' => 'intranet_student_search',
-                'search_terms' => $data,
-                'ip_address' => $ip,
+                'description' => "Pattern XSS suspect sur {$event->entityType} ({$event->action})",
             ]);
         }
     }
@@ -136,12 +120,41 @@ class ProcessIntranetDataChange implements ShouldQueue
         return false;
     }
 
-    /**
-     * Vérifier si c'est une mise à jour massive.
-     */
-    protected function isBulkUpdate(array $data): bool
+    protected function containsXssPatterns(array $data): bool
     {
-        // Considérer comme bulk si plus de 10 champs modifiés ou si contient des patterns suspects
-        return count($data) > 10 || isset($data['bulk_update']) || isset($data['mass_update']);
+        $xssPatterns = [
+            '/<script\b/i',
+            '/javascript:/i',
+            '/onerror\s*=/i',
+            '/onclick\s*=/i',
+            '/<img\b[^>]*onerror/i',
+        ];
+
+        foreach ($data as $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+
+            foreach ($xssPatterns as $pattern) {
+                if (preg_match($pattern, $value)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    protected function flattenPayload(array $data): string
+    {
+        $parts = [];
+
+        foreach ($data as $value) {
+            if (is_scalar($value)) {
+                $parts[] = (string) $value;
+            }
+        }
+
+        return implode(' | ', $parts);
     }
 }

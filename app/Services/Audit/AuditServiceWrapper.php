@@ -11,7 +11,7 @@ class AuditServiceWrapper
     /**
      * Enregistre une entrée d'audit via AuditLogger.
      *
-     * @param array $options ['user' => User|null, 'oldValues' => array, 'newValues' => array, 'metadata' => array, 'ipAddress' => string|null, 'entityId' => int|null]
+     * @param array $options ['user' => User|null, 'actorId' => int|null, 'oldValues' => array, 'newValues' => array, 'metadata' => array, 'ipAddress' => string|null, 'entityId' => int|string|null]
      */
     public static function log(
         string $action,
@@ -26,14 +26,15 @@ class AuditServiceWrapper
         $newValues = $options['newValues'] ?? [];
         $metadata = $options['metadata'] ?? [];
         $ipAddress = $options['ipAddress'] ?? request()->ip();
-        $entityId = $options['entityId'] ?? null;
+        $entityId = self::normalizeEntityId($options['entityId'] ?? null, $metadata);
+        $actorId = $options['actorId'] ?? $user?->id;
 
         $context = new AuditContext(
             action: $action,
             entityType: $entityType,
             ressource: $ressource,
             entityId: $entityId,
-            actorId: $user?->id,
+            actorId: $actorId,
             oldValues: $oldValues,
             newValues: $newValues,
             metadata: $metadata,
@@ -43,6 +44,25 @@ class AuditServiceWrapper
         );
 
         \App\Services\Audit\AuditLogger::log($context);
+    }
+
+    protected static function normalizeEntityId(mixed $entityId, array &$metadata): ?int
+    {
+        if ($entityId === null || $entityId === '') {
+            return null;
+        }
+
+        if (is_int($entityId)) {
+            return $entityId;
+        }
+
+        if (is_string($entityId) && ctype_digit($entityId)) {
+            return (int) $entityId;
+        }
+
+        $metadata['entity_identifier'] = (string) $entityId;
+
+        return null;
     }
 
     public static function logFaible(

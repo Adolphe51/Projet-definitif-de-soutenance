@@ -1,0 +1,38 @@
+@startuml CyberGuard
+left to right direction
+
+actor "Administrateur" as Admin
+actor "Utilisateur metier" as User
+actor "Attaquant" as Attacker
+
+rectangle "Diagramme global de cas d'utilisation - CyberGuard" {
+
+    Admin --> (S'authentifier avec OTP)
+    Admin --> (Consulter dashboard admin)
+    Admin --> (Analyser alertes)
+    Admin --> (Gérer incidents)
+    Admin --> (Bloquer IP)
+
+    User --> (S'authentifier avec OTP)
+    User --> (Utiliser mini site métier authentifié)
+    User --> (Gerer usagers, services et messages)
+
+    Attacker --> (Tenter intrusion)
+    Attacker --> (Injection SQL)
+    Attacker --> (Injection XSS)
+    Attacker --> (Brute force)
+
+    (Tenter intrusion) --> (Détection)
+    (Injection SQL) --> (Détection)
+    (Injection XSS) --> (Détection)
+    (Brute force) --> (Détection)
+
+    (Utiliser mini site métier authentifié) .> (S'authentifier avec OTP) : <<include>>
+    (Consulter dashboard admin) .> (S'authentifier avec OTP) : <<include>>
+    (Gerer usagers, services et messages) .> (Utiliser mini site métier authentifié) : <<include>>
+
+    (Détection) --> (Générer alerte)
+    (Générer alerte) --> (Consulter dashboard admin)
+
+}
+@enduml

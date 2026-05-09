@@ -1,192 +1,144 @@
-# 🛡️ CyberGuard — Plateforme de Cybersécurité Laravel 12
+# CyberGuard
 
-> Système interactif de détection, simulation et défense contre les cyberattaques avec géolocalisation, traçage des attaquants, alarmes sonores vocales et environnement honeypot complet.
+CyberGuard est une plateforme Laravel qui combine un accès sécurisé par OTP, un mini-site métier protégé, un moteur de détection ciblé et une interface SOC d'analyse d'incidents.
 
----
+## Vue d'ensemble
 
-## 🚀 Installation Rapide
+Le système s'articule autour de quatre blocs :
 
-### Prérequis
+- `Authentification sécurisée` : email, mot de passe, OTP, session signée, contrôle IP, audit.
+- `Mini-site métier` : surface applicative sur `/intranet` pour produire des actions auditables.
+- `SOC CyberGuard` : dashboard, alertes, incidents, blocage d'IP, géolocalisation, commentaires.
+- `Simulation et honeypot` : laboratoire de démonstration volontaire et pièges publics secondaires.
+
+## Point de cohérence important
+
+Le code conserve encore des noms techniques hérités dans le mini-site :
+
+- `Student` correspond au rôle métier de `Usager`
+- `Course` correspond à un `Service métier`
+- `Message` reste `Message`
+- `Enrollment`, `Attendance` et `Resource` sont des entités de support
+
+Autrement dit, si tu vois encore `students` ou `courses` dans les modèles ou les UML, ce n'est pas une incohérence cachée : c'est bien l'implémentation actuelle du système.
+
+## Contrôle d'accès réel
+
+Les accès sont séparés comme suit :
+
+- `/dashboard`, `/alerts`, `/attacks`, `/geo`, `/simulations`, `/honeypot` : session sécurisée obligatoire + rôle `admin`
+- `/intranet/*` : session sécurisée obligatoire pour toute action
+- `/admin` et `/phpmyadmin` : routes publiques honeypot, volontairement exposées comme pièges
+
+Le mini-site n'est donc pas public. Toute action y dépend d'une authentification réussie.
+
+## Installation locale
+
+Prérequis :
+
 - PHP 8.2+
 - Composer
-- SQLite (inclus) ou MySQL
+- Node.js + npm
+- SQLite ou MySQL
 
-### Étapes
+Installation rapide :
 
 ```bash
-# 1. Cloner / dézipper le projet
-cd cyberguard
-
-# 2. Installer les dépendances
 composer install
-
-# 3. Configuration
 cp .env.example .env
 php artisan key:generate
-
-# 4. Base de données (SQLite - zéro config)
 touch database/database.sqlite
-php artisan migrate
-php artisan db:seed
-
-# 5. Lancer le serveur
+php artisan migrate --seed
+npm install
+npm run build
 php artisan serve
 ```
 
-Ouvrir : **http://localhost:8000**
+Application locale :
 
----
+`http://127.0.0.1:8000`
 
-## ⚙️ Configuration MySQL (optionnel)
+## Comptes de démonstration
 
-Modifier `.env` :
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=cyberguard
-DB_USERNAME=root
-DB_PASSWORD=votre_mot_de_passe
-```
+Créés par [database/seeders/SystemSeeder.php](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/database/seeders/SystemSeeder.php) :
 
-```bash
-mysql -u root -p -e "CREATE DATABASE cyberguard CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-php artisan migrate
-php artisan db:seed
-```
+- `admin@gmail.com` / `Admin@123`
+- `metier@gmail.com` / `Metier@123`
 
----
+Le compte `admin` est redirigé vers le dashboard SOC après OTP. Le compte `metier` est redirigé vers `/intranet`.
 
-## 📡 Tâches Automatiques (Scheduler)
+## Commandes utiles
+
+Maintenance :
 
 ```bash
-# Terminal dédié — génère des attaques + simule le honeypot automatiquement
+php artisan cyberguard:autoblock
+php artisan cyberguard:cleanup --days=30
 php artisan schedule:work
 ```
 
-Ou ajouter au cron :
-```cron
-* * * * * cd /path/to/cyberguard && php artisan schedule:run >> /dev/null 2>&1
-```
-
----
-
-## 🎯 Commandes Artisan
+Simulation :
 
 ```bash
-# Générer des attaques de démo
-php artisan cyberguard:detect --count=10
-
-# Gérer le honeypot
-php artisan cyberguard:honeypot status      # Statut des pièges
-php artisan cyberguard:honeypot init        # Déployer les pièges
-php artisan cyberguard:honeypot simulate    # Simuler des intrus
-php artisan cyberguard:honeypot report      # Rapport complet
-
-# Auto-bloquer les IPs suspectes
-php artisan cyberguard:autoblock --threshold=5 --window=10
-
-# Nettoyer l'ancienne données
-php artisan cyberguard:cleanup --days=30
+php artisan cyberguard:detect --count=1
+php artisan cyberguard:honeypot init
+php artisan cyberguard:honeypot status
 ```
 
-## 🧪 Tests
+Mini-site et scénarios de test :
+
+```bash
+php artisan intranet:vulnerabilities inject
+php artisan intranet:vulnerabilities sql
+php artisan intranet:vulnerabilities xss
+php artisan intranet:vulnerabilities bruteforce
+php artisan intranet:vulnerabilities clean
+```
+
+Sans argument, `php artisan intranet:vulnerabilities` affiche désormais les actions disponibles.
+
+## Déploiement VPS
+
+Pour un déploiement propre sur VPS :
+
+- utiliser `APP_ENV=production`
+- désactiver `APP_DEBUG`
+- servir l'application derrière `Nginx` + `PHP-FPM`
+- activer HTTPS
+- configurer `SESSION_SECURE_COOKIE=true`
+- définir `CYBERGUARD_TRUSTED_ADMIN_IPS`
+- préférer MySQL en production
+- lancer le scheduler via cron
+
+Le guide détaillé est dans [docs/DEPLOIEMENT_VPS.md](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/docs/DEPLOIEMENT_VPS.md).
+
+## Documentation utile
+
+- [docs/ARCHITECTURE_SYSTEME.md](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/docs/ARCHITECTURE_SYSTEME.md)
+- [docs/DEMO_MINI_SITE_METIER.md](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/docs/DEMO_MINI_SITE_METIER.md)
+- [docs/DEPLOIEMENT_VPS.md](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/docs/DEPLOIEMENT_VPS.md)
+- [docs/GUIDE_PRESENTATION_UML_SOUTENANCE.md](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/docs/GUIDE_PRESENTATION_UML_SOUTENANCE.md)
+- [INTRANET_README.md](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/INTRANET_README.md)
+
+Sources UML :
+
+- [public/UML/diagram-class.puml](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/public/UML/diagram-class.puml)
+- [public/UML/diagram-deployment.puml](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/public/UML/diagram-deployment.puml)
+- [public/UML/diagram-cas-utilisation/diagram-admin-systeme.puml](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/public/UML/diagram-cas-utilisation/diagram-admin-systeme.puml)
+- [public/UML/diagram-cas-utilisation/diagram-user-intranet.puml](/home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/public/UML/diagram-cas-utilisation/diagram-user-intranet.puml)
+
+## Tests
 
 ```bash
 composer test
+```
+
+Ou :
+
+```bash
 vendor/bin/phpunit --configuration phpunit.xml.dist
 ```
 
-- `composer test` exécute les tests fonctionnels du projet.
-- `vendor/bin/phpunit --configuration phpunit.xml.dist` lance la batterie de validation Phase 5.
+## Licence
 
----
-
-## 🗺️ Pages Principales
-
-| URL | Description |
-|-----|-------------|
-| `/dashboard` | Tableau de bord avec stats en temps réel |
-| `/attacks/live` | Flux de détection live (polling 3s) |
-| `/attacks` | Liste complète des attaques + filtres |
-| `/geo/attackers` | Carte mondiale SVG des attaquants |
-| `/simulations` | Lancement et suivi des simulations |
-| `/alerts` | Centre d'alertes avec replay sonore |
-| `/honeypot` | Dashboard de gestion des pièges |
-
----
-
-## 🍯 URLs Pièges Honeypot
-
-Ces URLs sont **délibérément exposées** pour piéger les attaquants :
-
-| URL | Piège |
-|-----|-------|
-| `/wp-admin` | Clone WordPress Login |
-| `/phpmyadmin` | Clone phpMyAdmin |
-| `/admin` | Panneau admin fictif |
-| `/api/v1/users` | Fausse API REST |
-| `/internal/confidential.pdf` | Document canary |
-| `/.env` | Faux fichier .env |
-| `/backup.sql` | Faux backup SQL |
-
----
-
-## 🔊 Alarmes Sonores
-
-Le système utilise **Web Audio API + Speech Synthesis** :
-- Bips d'alerte répétitifs selon la sévérité
-- Sirène électronique montante/descendante
-- Voix française TTS : *"ALERTE SYSTÈME — ATTAQUE DÉTECTÉE"*
-- Bannière rouge clignotante
-- Overlay rouge sur l'écran
-- Déclenchement automatique sur attaque `high` ou `critical`
-- Test manuel via le bouton 🔊 dans la topbar
-
----
-
-## 🛠️ Stack Technique
-
-- **Backend** : Laravel 12, PHP 8.2+
-- **Base de données** : SQLite (dev) / MySQL (prod)
-- **Frontend** : Blade, CSS custom, JS vanilla
-- **Charts** : Chart.js CDN
-- **Icons** : Font Awesome 6
-- **Fonts** : Exo 2, Rajdhani, Share Tech Mono (Google Fonts)
-- **Audio** : Web Audio API + SpeechSynthesis API
-
----
-
-## 📁 Architecture
-
-```
-app/
-├── Console/Commands/      # Artisan: detect, honeypot, autoblock, cleanup
-├── Http/
-│   ├── Controllers/       # 6 contrôleurs principaux
-│   └── Middleware/        # HoneypotMiddleware, CheckBlockedIp
-├── Models/                # Attack, Alert, Simulation, BlockedIp, HoneypotTrap...
-├── Providers/             # AppServiceProvider
-└── Services/              # GeoService, AttackDetectionService, HoneypotService
-
-resources/views/
-├── layouts/app.blade.php  # Layout principal (sidebar + alarmes)
-├── dashboard/             # Tableau de bord
-├── attacks/               # Liste, Live, Détail, Carte, Tracé
-├── alerts/                # Centre d'alertes
-├── simulations/           # Lanceur de simulations
-└── honeypot/              # Dashboard + 7 pièges visuels
-```
-
----
-
-## 🔒 Sécurité
-
-⚠️ **Important** : Ce système est destiné à des fins éducatives et défensives uniquement.
-- Les pièges honeypot collectent des données d'attaquants réels
-- En production, configurez HTTPS et authentification admin
-- Respectez les lois locales sur la collecte de données réseau
-
----
-
-*CyberGuard v2.0 — Développé avec Laravel 12*
+Projet sous licence MIT.

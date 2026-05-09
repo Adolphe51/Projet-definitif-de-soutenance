@@ -4,6 +4,7 @@ use App\Http\Middleware\Auth\AuditRequest as AuthAuditRequest;
 use App\Http\Middleware\Auth\CheckIpAuthorized as AuthCheckIpAuthorized;
 use App\Http\Middleware\Auth\SecuritySessionMiddleware as AuthSecuritySessionMiddleware;
 use App\Http\Middleware\Auth\EnhancedCsrfProtection;
+use App\Http\Middleware\Auth\RequireRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ip.authorized' => AuthCheckIpAuthorized::class,
             'audit' => AuthAuditRequest::class,
             'throttle' => \App\Http\Middleware\RateLimitMiddleware::class,
+            'role' => RequireRole::class,
         ]);
 
         // 🔐 Groupes de middleware dans le bon ordre pour les routes protégées
@@ -42,6 +44,17 @@ return Application::configure(basePath: dirname(__DIR__))
             'session.security',
             'ip.authorized',
             'audit',
+        ]);
+
+        // Ensure route-level RBAC middleware runs after session security.
+        $middleware->priority([
+            EnhancedCsrfProtection::class,
+            \App\Http\Middleware\HoneypotMiddleware::class,
+            \App\Http\Middleware\CheckBlockedIp::class,
+            AuthSecuritySessionMiddleware::class,
+            RequireRole::class,
+            AuthCheckIpAuthorized::class,
+            AuthAuditRequest::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

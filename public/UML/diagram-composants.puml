@@ -1,0 +1,182 @@
+@startuml CyberGuardComponentDiagram
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+title Diagramme de composants - CyberGuard
+
+package "Interfaces" {
+  [Interface Auth]
+  [Interface Dashboard]
+  [Interface Alertes]
+  [Interface Incidents]
+  [Interface Simulations]
+  [Mini site metier]
+  [Interface Honeypot secondaire]
+}
+
+package "Couche HTTP Laravel" {
+  [LoginController]
+  [LogoutController]
+  [DashboardController]
+  [AlertController]
+  [AttackController]
+  [SimulationController]
+  [HoneypotController]
+  [GeoController]
+  [UsagerController]
+  [ServiceController]
+  [MessageController]
+}
+
+package "Middlewares de securite" {
+  [EnhancedCsrfProtection]
+  [CheckBlockedIp]
+  [SecuritySessionMiddleware]
+  [CheckIpAuthorized]
+  [RequireRole]
+  [AuditRequest]
+  [HoneypotMiddleware]
+}
+
+package "Services et listeners" {
+  [OTPService]
+  [SecuritySessionService]
+  [AuthenticationLoggingService]
+  [AttackDetectionService]
+  [DetectionRuleEngine]
+  [AutoBlockService]
+  [GeoService]
+  [AuditServiceWrapper]
+  [HoneypotService]
+  [MiniSiteDataChangeListener]
+}
+
+package "Modele de donnees" {
+  [User]
+  [SecuritySession]
+  [AuthCode]
+  [UserRole]
+  [Permission]
+  [RolePermission]
+  [Usager]
+  [ServiceMetier]
+  [RattachementService]
+  [MessageInterne]
+  [Attack]
+  [DetectionRule]
+  [Alert]
+  [BlockedIp]
+  [AttackComment]
+  [Simulation]
+  [AuditLog]
+  [HoneypotTrap]
+  [HoneypotInteraction]
+}
+
+[Interface Auth] --> [LoginController]
+[Interface Auth] --> [LogoutController]
+[Interface Dashboard] --> [DashboardController]
+[Interface Alertes] --> [AlertController]
+[Interface Incidents] --> [AttackController]
+[Interface Simulations] --> [SimulationController]
+[Mini site metier] --> [UsagerController]
+[Mini site metier] --> [ServiceController]
+[Mini site metier] --> [MessageController]
+[Interface Honeypot secondaire] --> [HoneypotController]
+
+[LoginController] --> [OTPService]
+[LoginController] --> [SecuritySessionService]
+[LoginController] --> [AuthenticationLoggingService]
+[LogoutController] --> [SecuritySessionService]
+[LogoutController] --> [AuditServiceWrapper]
+
+[DashboardController] --> [Attack]
+[DashboardController] --> [Alert]
+[DashboardController] --> [Simulation]
+[DashboardController] --> [AuditLog]
+[DashboardController] --> [BlockedIp]
+
+[AlertController] --> [Alert]
+[AlertController] --> [AuditLog]
+
+[AttackController] --> [AttackDetectionService]
+[AttackController] --> [AutoBlockService]
+[AttackController] --> [Attack]
+[AttackController] --> [Alert]
+[AttackController] --> [AttackComment]
+[AttackController] --> [BlockedIp]
+
+[SimulationController] --> [AttackDetectionService]
+[SimulationController] --> [Simulation]
+[SimulationController] --> [Attack]
+
+[UsagerController] --> [Usager]
+[UsagerController] --> [MiniSiteDataChangeListener]
+[ServiceController] --> [ServiceMetier]
+[ServiceController] --> [MiniSiteDataChangeListener]
+[MessageController] --> [MessageInterne]
+[MessageController] --> [MiniSiteDataChangeListener]
+
+[MiniSiteDataChangeListener] --> [AuditServiceWrapper]
+[MiniSiteDataChangeListener] --> [AttackDetectionService]
+
+[AttackDetectionService] --> [DetectionRuleEngine]
+[AttackDetectionService] --> [GeoService]
+[AttackDetectionService] --> [AutoBlockService]
+[AttackDetectionService] --> [Attack]
+[AttackDetectionService] --> [Alert]
+
+[AutoBlockService] --> [BlockedIp]
+[AutoBlockService] --> [Attack]
+[AutoBlockService] --> [AttackComment]
+[AutoBlockService] --> [Alert]
+[AutoBlockService] --> [SecuritySession]
+
+[HoneypotController] --> [HoneypotService]
+[HoneypotController] --> [GeoService]
+[HoneypotController] --> [HoneypotTrap]
+[HoneypotController] --> [HoneypotInteraction]
+[HoneypotController] --> [Alert]
+
+[OTPService] --> [AuthCode]
+[OTPService] --> [User]
+[SecuritySessionService] --> [SecuritySession]
+[SecuritySessionService] --> [User]
+[AuthenticationLoggingService] --> [AuditServiceWrapper]
+[AuthenticationLoggingService] --> [AttackDetectionService]
+[AuditServiceWrapper] --> [AuditLog]
+[DetectionRuleEngine] --> [DetectionRule]
+[GeoController] --> [GeoService]
+[GeoController] --> [Attack]
+[HoneypotService] --> [HoneypotTrap]
+[HoneypotService] --> [HoneypotInteraction]
+[HoneypotService] --> [Alert]
+
+[CheckBlockedIp] --> [AutoBlockService]
+[SecuritySessionMiddleware] --> [SecuritySessionService]
+[SecuritySessionMiddleware] --> [AuditServiceWrapper]
+[CheckIpAuthorized] --> [AuditServiceWrapper]
+[RequireRole] --> [UserRole]
+[UserRole] --> [RolePermission]
+[RolePermission] --> [Permission]
+[HoneypotMiddleware] --> [GeoService]
+[HoneypotMiddleware] --> [HoneypotTrap]
+[HoneypotMiddleware] --> [HoneypotInteraction]
+[HoneypotMiddleware] --> [Alert]
+
+note bottom of [Middlewares de securite]
+  Chaine principale des routes protegees :
+  CSRF -> IP bloquee -> session ->
+  IP autorisee -> audit -> role
+end note
+
+note right of [Services et listeners]
+  La demonstration principale repose sur :
+  - OTP
+  - audit
+  - mini site metier
+  - detection ciblee
+  - simulations manuelles
+end note
+
+@enduml

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attack;
+use App\Models\BlockedIp;
 use App\Services\GeoService;
 use Illuminate\Http\JsonResponse;
 
@@ -21,9 +22,19 @@ class GeoController extends Controller
 
     public function trace(string $ip)
     {
-        $geo = GeoService::lookup($ip);
         $attack = Attack::where('source_ip', $ip)->latest()->first();
-        return view('attacks.trace', compact('ip', 'geo', 'attack'));
+        $geo = $attack
+            ? [
+                'country' => $attack->country ?: 'Inconnu',
+                'city' => $attack->city ?: 'Inconnue',
+                'lat' => $attack->latitude,
+                'lon' => $attack->longitude,
+                'isp' => $attack->isp ?: 'Inconnu',
+            ]
+            : GeoService::lookup($ip);
+        $isBlocked = BlockedIp::isBlocked($ip) || $attack?->status === 'blocked';
+
+        return view('attacks.trace', compact('ip', 'geo', 'attack', 'isBlocked'));
     }
 
     public function mapData(): JsonResponse
@@ -63,7 +74,8 @@ class GeoController extends Controller
                 'lat' => $a->latitude,
                 'lon' => $a->longitude,
                 'color' => $a->severity_color,
-                'status' => $a->status,
+                'status' => BlockedIp::isBlocked($a->source_ip) ? 'blocked' : $a->status,
+                'alarm_triggered' => (bool) $a->alarm_triggered,
                 'time' => $a->created_at?->diffForHumans(),
             ]);
 

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Services\AttackDetectionService;
 use App\Models\Simulation;
 
 class CyberGuardSeeder extends Seeder
@@ -12,58 +11,40 @@ class CyberGuardSeeder extends Seeder
     {
         $this->command->info('🛡️  Seeding CyberGuard database...');
 
-        // 1. Pièges honeypot
+        // Vérifier le mode démo avant de générer les données fictives
+        $demoMode = config('cyberguard.mode.is_demo', false);
+        $isProduction = config('cyberguard.mode.is_production', false);
+
+        // 1. Pièges honeypot (toujours créés)
         $this->command->info('🍯 Déploiement des pièges honeypot...');
         \App\Services\HoneypotService::createDefaultTraps();
 
-        // 2. Attaques réelles
-        $this->command->info('💀 Génération des attaques de démo...');
-        for ($i = 0; $i < 60; $i++) {
-            AttackDetectionService::generateAttack(false);
+        // 2. Données d'incident et simulations
+        if ($demoMode && !$isProduction) {
+            $this->command->info('🧪 Mode DÉMO: aucune attaque ni simulation auto-générée. Utilisez le laboratoire ou un scénario réseau réel pour alimenter CyberGuard.');
+        } else {
+            $this->command->warn('⚠️  Génération automatique d\'attaques désactivée.');
         }
 
-        // 3. Attaques simulées
-        for ($i = 0; $i < 15; $i++) {
-            AttackDetectionService::generateAttack(true);
-        }
+        // 3. Historique de simulations laissé vide par défaut
+        Simulation::query()->whereIn('status', ['pending', 'running', 'completed', 'stopped'])->delete();
 
-        // 4. Simulations
-        $types = ['DDoS', 'SQL Injection', 'Brute Force', 'Port Scan', 'XSS', 'Ransomware'];
-        foreach ($types as $type) {
-            Simulation::create([
-                'name'             => "Demo-{$type}-" . date('Ymd'),
-                'attack_type'      => $type,
-                'target_ip'        => '192.168.1.' . rand(1, 254),
-                'duration_seconds' => rand(30, 120),
-                'intensity'        => ['low', 'medium', 'high'][rand(0, 2)],
-                'status'           => 'completed',
-                'packets_sent'     => rand(1000, 500000),
-                'started_at'       => now()->subMinutes(rand(30, 240)),
-                'completed_at'     => now()->subMinutes(rand(1, 29)),
-            ]);
-        }
-
-        // 5. Interactions honeypot
-        $traps = \App\Models\HoneypotTrap::all();
-        foreach ($traps as $trap) {
-            for ($i = 0; $i < rand(2, 8); $i++) {
-                \App\Services\HoneypotService::simulateInteraction($trap->id);
-            }
-        }
-
-        // 6. IPs bloquées
+        // 4. IPs bloquées
+        $this->command->info('🔒 Configuration des IPs bloquées...');
         foreach (['185.220.101.10', '103.21.244.15', '45.142.212.100'] as $ip) {
-            \App\Models\BlockedIp::blockIp($ip, 'Bloqué lors de la démo initiale');
+            \App\Models\BlockedIp::blockIp($ip, 'Bloqué lors du seeding initial');
         }
 
-        // 7. Alerte de bienvenue
+        // 5. Alerte de bienvenue
+        $mode = $demoMode && !$isProduction ? '(MODE DÉMO)' : '(MODE PROD)';
         \App\Models\Alert::create([
-            'title'   => '🛡️ CyberGuard Opérationnel',
-            'message' => 'Système initialisé. ' . \App\Models\Attack::count() . ' attaques chargées.',
+            'title'   => "🛡️ CyberGuard Opérationnel {$mode}",
+            'message' => 'Système initialisé. Aucun incident fictif n\'a été généré automatiquement.',
             'severity'=> 'low',
             'type'    => 'system',
         ]);
 
-        $this->command->info('✅ Seeding terminé! Attaques: ' . \App\Models\Attack::count());
+        $this->command->info('✅ Seeding terminé! Attaques en BD: ' . \App\Models\Attack::count());
+        $this->command->line('ℹ️  Les simulations et attaques doivent désormais être déclenchées volontairement pendant la démonstration.');
     }
 }

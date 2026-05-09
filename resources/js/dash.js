@@ -16,8 +16,19 @@
     }
 
     // Afficher un toast
-    function showToast(message, type = 'success', duration = 4000) {
+    function showToast(message, type = 'success', duration = 4000, legacyDuration = null) {
         const toastContainer = createToastContainer();
+
+        const knownTypes = ['success', 'error', 'warning', 'info', 'low', 'medium', 'high'];
+
+        if (!knownTypes.includes(type) && typeof duration === 'string' && knownTypes.includes(duration)) {
+            message = `${message} ${type}`.trim();
+            type = duration;
+            duration = typeof legacyDuration === 'number' ? legacyDuration : 4000;
+        } else if (typeof type === 'number') {
+            duration = type;
+            type = 'success';
+        }
         
         const toast = document.createElement('div');
         toast.className = `toast toast--${type}`;
@@ -54,60 +65,110 @@
         warning: (msg) => showToast(msg, 'warning'),
         info: (msg) => showToast(msg, 'info')
     };
+    window.showToast = showToast;
+    window.csrfFetch = async (url, options = {}) => {
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const headers = new Headers(options.headers || {});
 
-// Données initiales pour le graphique
-const attackData = JSON.parse(document.getElementById('attackChart').dataset.attackData || '{}');
-const ctx = document.getElementById('attackChart').getContext('2d');
-
-new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-        labels: Object.keys(attackData),
-        datasets: [{
-            data: Object.values(attackData),
-            backgroundColor: [
-                '#ff0040', '#ff6b00', '#ffd600', '#00ff88',
-                '#00e5ff', '#a855f7', '#ec4899', '#3b82f6'
-            ],
-            borderColor: '#0a1520',
-            borderWidth: 2
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'right',
-                labels: { color: '#4a7a9b', font: { family: 'Share Tech Mono', size: 11 }, boxWidth: 12 }
-            }
+        if (token) {
+            headers.set('X-CSRF-TOKEN', token);
         }
+
+        if (!headers.has('Accept')) {
+            headers.set('Accept', 'application/json');
+        }
+
+        if (typeof options.body === 'string' && !headers.has('Content-Type')) {
+            headers.set('Content-Type', 'application/json');
+        }
+
+        return fetch(url, {
+            credentials: 'same-origin',
+            ...options,
+            headers,
+        });
+    };
+
+    const attackChartElement = document.getElementById('attackChart');
+    if (attackChartElement && typeof window.Chart === 'function') {
+        const attackData = JSON.parse(attackChartElement.dataset.attackData || '{"labels":[],"values":[]}');
+        const ctx = attackChartElement.getContext('2d');
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: attackData.labels || [],
+                datasets: [{
+                    data: attackData.values || [],
+                    backgroundColor: [
+                        '#ff0040', '#ff6b00', '#ffd600', '#00ff88',
+                        '#00e5ff', '#a855f7', '#ec4899', '#3b82f6'
+                    ],
+                    borderColor: '#0a1520',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#4a7a9b', font: { family: 'Share Tech Mono', size: 11 }, boxWidth: 12 }
+                    }
+                }
+            }
+        });
     }
-});
 
-// Auto-refresh stats
-let prevTotal = Number.parseInt(document.getElementById('stat-total').textContent);
-setInterval(async () => {
-    try {
-        const res = await fetch('/api/stats');
-        const data = await res.json();
+    const totalStat = document.getElementById('stat-total');
+    if (!totalStat) {
+        return;
+    }
 
-        document.getElementById('stat-total').textContent = data.total_attacks;
-        document.getElementById('stat-critical').textContent = data.critical;
-        document.getElementById('stat-blocked').textContent = data.blocked;
-        document.getElementById('stat-active').textContent = data.active;
-        document.getElementById('stat-countries').textContent = data.countries_count;
-        document.getElementById('stat-perhour').textContent = data.attacks_per_hour;
-        document.getElementById('stat-blocked-ips').textContent = data.blocked_ips_count;
-        document.getElementById('stat-active-honeypots').textContent = data.active_honeypots;
+    function updateText(id, value, formatter = null) {
+        const element = document.getElementById(id);
 
-        if (data.total_attacks > prevTotal) {
-            prevTotal = data.total_attacks;
-            if (data.critical > 0) {
-                showToast('💀 ATTAQUE CRITIQUE!', 'Nouvelle attaque critique détectée!', 'critical');
-            }
+        if (!element) {
+            return;
         }
-    } catch (e) { console.error(e); }
-}, 8000);
+
+        element.textContent = formatter ? formatter(value) : value;
+    }
+
+    let prevTotal = Number.parseInt(totalStat.textContent, 10) || 0;
+
+    setInterval(async () => {
+        try {
+            const res = await fetch('/api/stats');
+            const data = await res.json();
+
+            updateText('stat-total', data.total_attacks);
+            updateText('stat-critical', data.critical);
+            updateText('stat-blocked', data.blocked);
+            updateText('stat-active', data.active);
+            updateText('stat-unread-alerts', data.unread_alerts);
+            updateText('stat-auth-audit', data.auth_audit_events);
+            updateText('stat-intranet-audit', data.intranet_audit_events);
+            updateText('stat-manual-sims', data.manual_simulation_attacks);
+            updateText('stat-countries', data.countries_count);
+            updateText('stat-perhour', data.attacks_per_hour);
+            updateText('stat-blocked-ips', data.blocked_ips_count);
+            updateText('stat-block-rate', data.block_rate_percent, (value) => `${Number(value).toFixed(1)}%`);
+            updateText('stat-mttr', data.mean_resolution_minutes, (value) => Number(value).toFixed(1));
+            updateText('stat-top-type', data.top_attack_type);
+            updateText('stat-high-risk', data.high_risk_ips);
+
+            if (data.total_attacks > prevTotal) {
+                prevTotal = data.total_attacks;
+
+                if (data.critical > 0) {
+                    showToast('Nouvelle attaque critique détectée!', 'error');
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }, 8000);
 
 })();

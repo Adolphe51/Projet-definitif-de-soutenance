@@ -1,63 +1,89 @@
-@startuml
+@startuml CyberGuardDeployment
+top to bottom direction
 skinparam shadowing false
 skinparam componentStyle rectangle
 
-node "Machine Attaquante\n(Kali Linux)" as Attacker {
-    component "Outils d’attaque\n(Nmap, Metasploit)"
+title Diagramme de deploiement - CyberGuard
+
+node "Poste utilisateur SOC" as SocClient {
+  artifact "Navigateur Web\nAdministrateur" as SocBrowser
 }
 
-node "Système Cible\n(Ubuntu Server)" as Target {
-    component "Serveur Web\n(Apache/Nginx)"
-    component "Agent de logs\n(Filebeat / Wazuh Agent)"
+node "Poste utilisateur metier" as BizClient {
+  artifact "Navigateur Web\nMini site metier" as BizBrowser
 }
 
-node "Collecteur de Logs\n(Log Server)" as Collector {
-    component "Logstash"
-    component "Wazuh Manager"
+node "Poste / VM d'attaque" as ThreatNode {
+  artifact "Navigateur, curl,\nsqlmap, scripts, VM reseau" as ThreatTool
 }
 
-node "Serveur SIEM\n(Analyse & Corrélation)" as SIEM {
-    component "Elasticsearch"
-    component "Moteur de corrélation"
-    component "Règles de détection"
+cloud "Internet / reseau" as Network
+
+node "VPS CyberGuard" as VpsNode {
+  component "Nginx + TLS" as ReverseProxy
+  component "Laravel 12 + PHP-FPM" as LaravelApp
+  component "Middlewares securite\nCSRF / Session / IP / Role / Audit" as SecurityLayer
+  component "Services applicatifs\nOTP / Detection / AutoBlock / Geo / Audit" as DomainServices
+  component "Assets Vite\nCSS + JS compiles" as FrontAssets
+  component "Cron + Laravel Scheduler" as Scheduler
+  component "Honeypot secondaire\n/admin / phpmyadmin" as HoneypotArea
 }
 
-node "Serveur Application\n(API + Auth)" as App {
-    component "Backend (Laravel)"
-    component "Service Auth (JWT + 2FA)"
-    component "RBAC / ABAC Engine"
-    component "Service Audit"
+node "Donnees" as DataNode {
+  database "MySQL (prod)\nSQLite (dev/demo)" as DB
 }
 
-node "Base de Données" as DB {
-    component "MySQL / PostgreSQL"
+node "Service mail OTP" as MailNode {
+  component "SMTP transactionnel" as Mailer
 }
 
-node "Interface Utilisateur\n(Navigateur Web)" as Client {
-    component "Dashboard Web"
-}
+cloud "API Geo optionnelle" as GeoApi
 
-node "Administrateur / Analyste" as User
+SocBrowser --> Network
+BizBrowser --> Network
+ThreatTool --> Network
 
-' ==============================
-' COMMUNICATIONS
-' ==============================
+Network --> ReverseProxy : HTTPS
+ReverseProxy --> LaravelApp
+LaravelApp --> SecurityLayer
+SecurityLayer --> DomainServices
+LaravelApp --> DB
+DomainServices --> DB
+DomainServices --> Mailer : envoi OTP
+DomainServices --> GeoApi : lookup IP
+FrontAssets --> SocBrowser
+FrontAssets --> BizBrowser
 
-Attacker --> Target : Attaques simulées
+ThreatTool --> HoneypotArea : routes pieges publiques
+HoneypotArea --> SecurityLayer
 
-Target --> Collector : Envoi des logs
-Collector --> SIEM : Transmission logs
+Scheduler --> LaravelApp : schedule:run
 
-SIEM --> DB : Stockage événements
-SIEM --> App : Envoi alertes
+note right of VpsNode
+  Cible recommandee sur VPS :
+  - APP_ENV=production
+  - APP_DEBUG=false
+  - HTTPS obligatoire
+  - cookies securises
+  - scheduler par cron
+end note
 
-App --> DB : Données (users, audit, sessions)
+note bottom of Scheduler
+  Le scheduler sert surtout a :
+  - l'auto-blocage periodique
+  - la maintenance
+  - le nettoyage des anciennes donnees
+end note
 
-Client --> App : Requêtes HTTP (API)
-App --> Client : Réponses (JSON/UI)
-
-User --> Client : Interaction
-
-SIEM --> Client : Visualisation (via API)
+note bottom of DataNode
+  Tables principales :
+  users, security_sessions, auth_codes,
+  usagers, services, rattachements,
+  messages internes,
+  attacks, alerts, blocked_ips,
+  attack_comments, simulations,
+  detection_rules, audit_logs,
+  honeypot_traps, honeypot_interactions
+end note
 
 @enduml
