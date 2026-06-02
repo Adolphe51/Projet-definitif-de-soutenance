@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Créer un usager - Mini site')
+@section('title', 'Créer un usager - Module de démonstration')
 @section('page-title', 'Créer un usager')
 @section('page-subtitle', 'Ajout d’une nouvelle fiche métier dans un parcours sécurisé, journalisé et corrélable avec le SOC.')
 

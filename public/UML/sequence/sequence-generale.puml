@@ -1,51 +1,46 @@
-@startuml CyberGuardSequenceGenerale
+@startuml CyberGuardSequenceAcademique
 autonumber
-title Sequence generale - mini site metier, audit, detection, alerte et analyse SOC
+title Sequence de detection, supervision et reponse de CyberGuard
 
-actor "Utilisateur metier" as BusinessUser
-actor "Administrateur" as SocUser
-participant "Mini site metier" as MiniSite
-participant "Controllers mini site" as MiniSiteControllers
-participant "MiniSiteDataChangeListener" as Listener
-participant "AuditServiceWrapper" as Audit
-participant "AttackDetectionService" as DetectService
-participant "DetectionRuleEngine" as RuleEngine
-participant "GeoService" as Geo
-participant "AutoBlockService" as AutoBlock
-participant "Base de donnees" as DB
-participant "Dashboard / Alertes / Incidents" as Supervision
+actor "Utilisateur" as User
+actor "Administrateur SOC" as Admin
 
-BusinessUser -> MiniSite : consulter ou modifier une donnee
-MiniSite -> MiniSiteControllers : requete securisee
-MiniSiteControllers -> DB : enregistrer la donnee
-MiniSiteControllers -> Listener : evenement de changement metier
+participant "Module applicatif\nde demonstration" as App
+participant "Service de\njournalisation" as Audit
+participant "Moteur de\ndetection" as Detect
+participant "Service de reponse\nautomatique" as Response
+participant "Base de donnees\nsecurite" as DB
+participant "Interface de\nsupervision SOC" as SOC
 
-Listener -> Audit : journaliser l'action metier
-Audit -> DB : creer AuditLog
+User -> App : effectuer une action metier
+App -> Audit : transmettre l'evenement
+Audit -> DB : enregistrer l'audit
 
-alt contenu ou motif suspect
-  Listener -> DetectService : detectAttack(SQL Injection ou XSS, contexte)
-  DetectService -> RuleEngine : detectByRule(rule_id, contexte)
-  RuleEngine -> Geo : lookup(source_ip)
-  Geo --> RuleEngine : pays / ville / coordonnees
-  RuleEngine -> DB : creer Attack
-  RuleEngine -> DB : creer Alert
-  RuleEngine -> AutoBlock : evaluateAttack(attack)
+Audit -> Detect : analyser l'evenement
 
-  alt seuil de blocage atteint
-    AutoBlock -> DB : creer ou mettre a jour BlockedIp
-    AutoBlock -> DB : passer Attack.status = blocked
-    AutoBlock -> DB : creer alerte de blocage
-  else pas de blocage
-    AutoBlock --> RuleEngine : pas d'action defensive
-  end
-else aucune detection
-  Listener --> MiniSiteControllers : audit seul
+alt activite suspecte detectee
+
+Detect -> DB : enregistrer attaque
+Detect -> DB : generer alerte
+
+Detect -> Response : evaluer la menace
+
+alt seuil critique atteint
+    Response -> DB : enregistrer blocage IP
+    Response -> DB : mettre a jour incident
+else menace non critique
+    Response --> Detect : aucune action defensive
 end
 
-SocUser -> Supervision : ouvrir dashboard / alertes / incidents
-Supervision -> DB : lire attaques, alertes, audits et stats
-DB --> Supervision : donnees consolidees
-Supervision --> SocUser : affichage du contexte et des priorites
+else aucune menace detectee
+
+Detect --> Audit : archiver l'evenement
+
+end
+
+Admin -> SOC : consulter alertes et incidents
+SOC -> DB : lire les donnees de securite
+DB --> SOC : retourner les donnees consolidees
+SOC --> Admin : afficher incidents et priorites
 
 @enduml

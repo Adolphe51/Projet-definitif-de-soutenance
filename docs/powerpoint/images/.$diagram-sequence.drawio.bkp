@@ -1,0 +1,307 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.2.5 Chrome/138.0.7204.251 Electron/37.6.1 Safari/537.36" version="28.2.5">
+  <diagram name="Page-1" id="UdQSoJLxQVhlWkhp5Hxw">
+    <mxGraphModel dx="1426" dy="1240" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="vG48edn2lGVhrZclgEwQ-27" value="Diagramme de Séquence - Modifier donnée" style="whiteSpace=wrap;html=1;aspect=fixed;fillColor=none;strokeColor=#000000;strokeWidth=2;rotation=0;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry x="214" y="-275" width="1350" height="1293" as="geometry" />
+        </mxCell>
+        <mxCell id="zVS-zqdFyBrHvFpBFHIs-2" value="Utilisateur Métier authentifié" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=none;strokeColor=#000000;fontColor=#000000;fontFamily=Times New Roman;fontSize=17;" parent="1" vertex="1">
+          <mxGeometry x="225" y="-221.5" width="180" height="1592.5" as="geometry" />
+        </mxCell>
+        <mxCell id="zVS-zqdFyBrHvFpBFHIs-4" value="Interface Application Métier" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=none;strokeColor=#000000;fontColor=#000000;fontFamily=Times New Roman;fontSize=17;" parent="1" vertex="1">
+          <mxGeometry x="552" y="-220" width="132" height="1592" as="geometry" />
+        </mxCell>
+        <mxCell id="zVS-zqdFyBrHvFpBFHIs-7" value="Service Détection" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=none;strokeColor=#000000;fontColor=#000000;fontFamily=Times New Roman;fontSize=17;" parent="1" vertex="1">
+          <mxGeometry x="1095" y="-220" width="114" height="1591" as="geometry" />
+        </mxCell>
+        <mxCell id="zVS-zqdFyBrHvFpBFHIs-8" value="Base de données" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=none;strokeColor=#000000;fontColor=#000000;fontFamily=Times New Roman;fontSize=17;" parent="1" vertex="1">
+          <mxGeometry x="1457" y="-220" width="100" height="1580" as="geometry" />
+        </mxCell>
+        <mxCell id="zVS-zqdFyBrHvFpBFHIs-9" value="Contrôlerur Métier" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=none;strokeColor=#000000;fontColor=#000000;fontFamily=Times New Roman;fontSize=17;" parent="1" vertex="1">
+          <mxGeometry x="761" y="-220" width="118" height="1595" as="geometry" />
+        </mxCell>
+        <mxCell id="zVS-zqdFyBrHvFpBFHIs-12" value="&lt;span&gt;Accès /intranet/users&lt;/span&gt;" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.485;entryY=0.045;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" target="zVS-zqdFyBrHvFpBFHIs-4" edge="1">
+          <mxGeometry x="-0.7787" y="29" width="160" relative="1" as="geometry">
+            <mxPoint x="314" y="-150" as="sourcePoint" />
+            <mxPoint x="568" y="-149.56999999999994" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="zVS-zqdFyBrHvFpBFHIs-15" value="GET /intranet/users" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.52;entryY=0.155;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-1" y="29" width="160" relative="1" as="geometry">
+            <mxPoint x="620" y="-126" as="sourcePoint" />
+            <mxPoint x="823" y="-125.97000000000003" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="zVS-zqdFyBrHvFpBFHIs-16" value="alt" style="shape=umlFrame;whiteSpace=wrap;html=1;pointerEvents=0;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;strokeColor=#000000;fillColor=#CCCCCC;" parent="1" vertex="1">
+          <mxGeometry x="277" y="328" width="1263" height="674" as="geometry" />
+        </mxCell>
+        <mxCell id="zVS-zqdFyBrHvFpBFHIs-20" value="[Contenu suspect détecté]" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="300" y="326" width="312" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="zVS-zqdFyBrHvFpBFHIs-22" value="Récupérer usagers" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.59;entryY=0.082;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-0.9423" y="35" width="160" relative="1" as="geometry">
+            <mxPoint x="822" y="-103" as="sourcePoint" />
+            <mxPoint x="1516" y="-102.24399999999991" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-7" value="Liste usagers" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;exitX=0.51;exitY=0.101;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" edge="1">
+          <mxGeometry x="0.865" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="1508" y="-71.64200000000005" as="sourcePoint" />
+            <mxPoint x="823" y="-71" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-8" value="Enregistrer AuditLog&lt;div&gt;(severity=&#39;HIGH&#39;,&amp;nbsp;&lt;/div&gt;&lt;div&gt;detected_pattern)&lt;/div&gt;" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.5;entryY=0.15;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0;exitX=0.5;exitY=0.15;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" edge="1">
+          <mxGeometry x="-1" y="80" width="160" relative="1" as="geometry">
+            <mxPoint x="1290" y="499.35" as="sourcePoint" />
+            <mxPoint x="1511" y="499.0000000000001" as="targetPoint" />
+            <mxPoint y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-9" value="Récupérer usagers" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.53;entryY=0.191;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-0.9325" y="30" width="160" relative="1" as="geometry">
+            <mxPoint x="824" y="65" as="sourcePoint" />
+            <mxPoint x="1510" y="64.57799999999997" as="targetPoint" />
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-18" value="JSON usagers" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;" parent="1" edge="1">
+          <mxGeometry x="0.8889" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="818" y="-45" as="sourcePoint" />
+            <mxPoint x="620" y="-45" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-19" value="Affiche tableau usagers" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;exitX=0.5;exitY=0.136;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" edge="1">
+          <mxGeometry x="0.8889" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="618" y="-20.65599999999995" as="sourcePoint" />
+            <mxPoint x="314" y="-21" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-20" value="&lt;span&gt;Clique pour consulter détail usager&lt;/span&gt;" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.485;entryY=0.158;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-0.9074" y="50" width="160" relative="1" as="geometry">
+            <mxPoint x="314" y="20" as="sourcePoint" />
+            <mxPoint x="616.02" y="19.532000000000153" as="targetPoint" />
+            <mxPoint x="-4" y="13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-21" value="GET /intranet/users/{id}" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.47;entryY=0.198;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-1" y="29" width="160" relative="1" as="geometry">
+            <mxPoint x="620" y="45" as="sourcePoint" />
+            <mxPoint x="818" y="45" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-26" value="Analyser payload (XSS, SQL Injection)" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;entryX=0.5;entryY=0.313;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" edge="1">
+          <mxGeometry x="-0.9745" y="30" width="160" relative="1" as="geometry">
+            <mxPoint x="823" y="235.0900000000001" as="sourcePoint" />
+            <mxPoint x="1152" y="234.4630000000002" as="targetPoint" />
+            <mxPoint x="-1" as="offset" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-37" value="Regex + pattern matching" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;" parent="1" edge="1">
+          <mxGeometry x="-0.8269" y="34" width="160" relative="1" as="geometry">
+            <mxPoint x="1151" y="260" as="sourcePoint" />
+            <mxPoint x="1147.8333333333335" y="291" as="targetPoint" />
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1209" y="260" />
+              <mxPoint x="1209" y="291" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-38" value="Détails usagers" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;exitX=0.53;exitY=0.214;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" edge="1">
+          <mxGeometry x="0.9126" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="1510" y="97.41199999999981" as="sourcePoint" />
+            <mxPoint x="821" y="96.42000000000007" as="targetPoint" />
+            <mxPoint x="1" as="offset" />
+            <Array as="points">
+              <mxPoint x="1293" y="96" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-41" value="Données usagers" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;" parent="1" edge="1">
+          <mxGeometry x="0.8889" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="817" y="121" as="sourcePoint" />
+            <mxPoint x="621" y="121" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-42" value="Affiche fiche usagers" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;exitX=0.53;exitY=0.237;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.517;entryY=0.23;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" target="zVS-zqdFyBrHvFpBFHIs-2" edge="1">
+          <mxGeometry x="0.8889" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="621.96" y="144.29799999999977" as="sourcePoint" />
+            <mxPoint x="316.79999999999995" y="142.67599999999993" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-48" value="Résultat analyse" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.477;entryY=0.372;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0;dashed=1;" parent="1" edge="1">
+          <mxGeometry x="0.7423" y="-36" width="160" relative="1" as="geometry">
+            <mxPoint x="1148" y="310" as="sourcePoint" />
+            <mxPoint x="822" y="310" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-49" value="403 Forbidden + Alerte SOC" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;" parent="1" edge="1">
+          <mxGeometry x="0.8889" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="819" y="646.87" as="sourcePoint" />
+            <mxPoint x="620" y="646.87" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-50" value="&quot;Action bloquée - modération&quot;" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;exitX=0.53;exitY=0.704;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" edge="1">
+          <mxGeometry x="0.8889" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="621.96" y="676.0159999999996" as="sourcePoint" />
+            <mxPoint x="313" y="677" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-51" value="" style="edgeStyle=none;html=1;endArrow=none;verticalAlign=bottom;dashed=1;strokeWidth=2;rounded=0;strokeColor=#000000;align=left;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;entryX=0.997;entryY=0.772;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="283" y="694" as="sourcePoint" />
+            <mxPoint x="1542.2110000000002" y="701.328" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-52" value="[Contenu valide]" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="172" y="697" width="402" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-53" value="200 OK + confirmation" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;" parent="1" edge="1">
+          <mxGeometry x="0.8889" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="818" y="968" as="sourcePoint" />
+            <mxPoint x="618" y="968" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-54" value="&quot;Modifications enregistrées&quot;" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;exitX=0.5;exitY=0.879;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" edge="1">
+          <mxGeometry x="0.8889" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="618" y="985.9659999999999" as="sourcePoint" />
+            <mxPoint x="312" y="986" as="targetPoint" />
+            <mxPoint as="offset" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-59" value="PATCH /intranet/users/{id}" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.47;entryY=0.198;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-1" y="29" width="160" relative="1" as="geometry">
+            <mxPoint x="620" y="210" as="sourcePoint" />
+            <mxPoint x="820" y="210" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-64" value="&lt;span&gt;Modifie champ texte (email)&lt;/span&gt;" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.53;entryY=0.27;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-0.834" y="33" width="160" relative="1" as="geometry">
+            <mxPoint x="314" y="179" as="sourcePoint" />
+            <mxPoint x="621.96" y="178.57999999999993" as="targetPoint" />
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-73" value="Auditer action suspecte&amp;nbsp;&lt;div&gt;(user, action, payload, risk_level)&lt;/div&gt;" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.526;entryY=0.455;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-0.9348" y="56" width="160" relative="1" as="geometry">
+            <mxPoint x="820" y="418" as="sourcePoint" />
+            <mxPoint x="1293.964" y="417.7049999999999" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-74" value="Audit enregistré" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;" parent="1" edge="1">
+          <mxGeometry x="0.9126" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="1506" y="529" as="sourcePoint" />
+            <mxPoint x="1289.5" y="529" as="targetPoint" />
+            <mxPoint x="1" as="offset" />
+            <Array as="points">
+              <mxPoint x="1358" y="529" />
+              <mxPoint x="1358" y="529" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-81" value="Service Audit" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=none;strokeColor=#000000;fontColor=#000000;fontFamily=Times New Roman;fontSize=17;" parent="1" vertex="1">
+          <mxGeometry x="1234" y="-220" width="114" height="1579" as="geometry" />
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-82" value="DANGER detected" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.477;entryY=0.372;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0;dashed=1;" parent="1" edge="1">
+          <mxGeometry x="0.7423" y="-36" width="160" relative="1" as="geometry">
+            <mxPoint x="1149" y="360" as="sourcePoint" />
+            <mxPoint x="823" y="360" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-83" value="Threat recorded" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.483;entryY=0.567;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0;dashed=1;" parent="1" edge="1">
+          <mxGeometry x="0.7423" y="-36" width="160" relative="1" as="geometry">
+            <mxPoint x="1291" y="550" as="sourcePoint" />
+            <mxPoint x="817.9940000000001" y="550.5509999999999" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-84" value="Créer Alert" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.53;entryY=0.191;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-0.9325" y="30" width="160" relative="1" as="geometry">
+            <mxPoint x="822" y="582" as="sourcePoint" />
+            <mxPoint x="1508" y="582" as="targetPoint" />
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-85" value="Alert créée" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;exitX=0.53;exitY=0.214;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" edge="1">
+          <mxGeometry x="0.9126" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="1504" y="612.58" as="sourcePoint" />
+            <mxPoint x="815" y="612.0000000000001" as="targetPoint" />
+            <mxPoint x="1" as="offset" />
+            <Array as="points">
+              <mxPoint x="1287" y="611.58" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-86" value="Mettre à jour usagers" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.53;entryY=0.191;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-0.9325" y="30" width="160" relative="1" as="geometry">
+            <mxPoint x="820" y="730" as="sourcePoint" />
+            <mxPoint x="1506" y="730" as="targetPoint" />
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-87" value="Usager modifié" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;exitX=0.53;exitY=0.214;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" edge="1">
+          <mxGeometry x="0.9126" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="1506" y="756.58" as="sourcePoint" />
+            <mxPoint x="817" y="756.0000000000001" as="targetPoint" />
+            <mxPoint x="1" as="offset" />
+            <Array as="points">
+              <mxPoint x="1289" y="755.58" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-88" value="Auditer action nominale&amp;nbsp;&lt;div&gt;(user, entity, change, timestamp)&lt;/div&gt;" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.526;entryY=0.455;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0" parent="1" edge="1">
+          <mxGeometry x="-0.9348" y="56" width="160" relative="1" as="geometry">
+            <mxPoint x="818" y="812" as="sourcePoint" />
+            <mxPoint x="1292" y="812" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-89" value="Enregistrer AuditLog&lt;div&gt;(severity=&#39;LOW&#39;,&amp;nbsp;&lt;/div&gt;&lt;div&gt;action_type)&lt;/div&gt;" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.5;entryY=0.15;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0;exitX=0.5;exitY=0.15;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" edge="1">
+          <mxGeometry x="-1" y="80" width="160" relative="1" as="geometry">
+            <mxPoint x="1290" y="888.3499999999999" as="sourcePoint" />
+            <mxPoint x="1511" y="888" as="targetPoint" />
+            <mxPoint y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-90" value="Audit recorded" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.483;entryY=0.567;entryDx=0;entryDy=0;entryPerimeter=0;fontStyle=0;dashed=1;" parent="1" edge="1">
+          <mxGeometry x="0.7423" y="-36" width="160" relative="1" as="geometry">
+            <mxPoint x="1291" y="936" as="sourcePoint" />
+            <mxPoint x="818" y="937" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vG48edn2lGVhrZclgEwQ-104" value="Audit enregistré" style="endArrow=classic;endFill=1;endSize=12;html=1;rounded=0;strokeColor=#000000;align=left;verticalAlign=top;fontFamily=Times New Roman;fontSize=20;fontColor=#000000;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;fontStyle=0;dashed=1;" parent="1" edge="1">
+          <mxGeometry x="0.9126" y="-31" width="160" relative="1" as="geometry">
+            <mxPoint x="1510.5" y="916" as="sourcePoint" />
+            <mxPoint x="1294" y="916" as="targetPoint" />
+            <mxPoint x="1" as="offset" />
+            <Array as="points">
+              <mxPoint x="1362.5" y="916" />
+              <mxPoint x="1362.5" y="916" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

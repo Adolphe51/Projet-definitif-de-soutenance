@@ -1,0 +1,31 @@
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name 192.168.1.104;
+
+    root /home/olivierfatombi/Desktop/prog/academie/stage3/Projet-definitif-de-soutenance/public;
+    index index.php index.html;
+
+    access_log /var/log/nginx/cyberguard_access.log;
+    error_log /var/log/nginx/cyberguard_error.log;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Modifier le message - Mini site')
+@section('title', 'Modifier le message - Module de démonstration')
 @section('page-title', 'Modifier un message')
 @section('page-subtitle', 'Mise à jour d’un contenu interne avec conservation de la trace et possibilité de corrélation vers les événements de sécurité.')
 

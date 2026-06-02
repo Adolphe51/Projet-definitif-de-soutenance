@@ -370,9 +370,9 @@ a.button:hover {
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
 }
 
-.feed-item + .feed-item,
-.alert-item + .alert-item,
-.honeypot-item + .honeypot-item {
+.feed-item+.feed-item,
+.alert-item+.alert-item,
+.honeypot-item+.honeypot-item {
     margin-top: 0.75rem;
 }
 
@@ -994,7 +994,10 @@ a.button:hover {
 }
 
 .table-wrap {
-    overflow-x: auto;
+    display: grid;
+    gap: 0.7rem;
+    max-height: 450px;
+    overflow-y: auto;
 }
 
 .incident-list-hero {
@@ -1196,12 +1199,6 @@ a.button:hover {
     gap: 1rem;
 }
 
-.sim-launch-card,
-.sim-stage-card,
-.sim-history-card {
-    padding: 1.2rem;
-}
-
 .sim-launch-card {
     display: grid;
     gap: 1rem;
@@ -1353,7 +1350,7 @@ a.button:hover {
 .sim-feed {
     display: grid;
     gap: 0.7rem;
-    max-height: 280px;
+    max-height: 450px;
     overflow-y: auto;
 }
 
@@ -1753,15 +1750,9 @@ a.button:hover {
 .geo-layout-grid,
 .trace-layout-grid,
 .honeypot-detail-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.85fr);
     display: grid;
     gap: 1rem;
-}
-
-.live-layout-grid,
-.geo-layout-grid,
-.trace-layout-grid,
-.honeypot-detail-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.85fr);
 }
 
 .live-side-stack,
@@ -2055,8 +2046,8 @@ a.button:hover {
 }
 
 .geo-list-shell {
-    max-height: 592px;
-    overflow: hidden;
+    display: grid;
+    max-height: 650px;
 }
 
 .geo-list {
@@ -2497,7 +2488,9 @@ a.button:hover {
 }
 
 @keyframes blink {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
 
@@ -2529,7 +2522,9 @@ a.button:hover {
 }
 
 @keyframes dotPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
         opacity: 1;
     }
@@ -2798,8 +2793,8 @@ a.button:hover {
     gap: 1rem;
 }
 
-.app-content > section,
-.app-content > div,
+.app-content>section,
+.app-content>div,
 .dashboard-panel {
     min-width: 0;
 }
@@ -3026,6 +3021,7 @@ a.button:hover {
 }
 
 @media (max-width: 1180px) {
+
     .app-shell,
     .dashboard-grid,
     .dashboard-hero,
@@ -3062,6 +3058,7 @@ a.button:hover {
 }
 
 @media (max-width: 720px) {
+
     .app-shell,
     .auth-container {
         padding: 1rem;

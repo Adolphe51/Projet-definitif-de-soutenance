@@ -1,0 +1,60 @@
+@startuml CyberGuardArchitectureGlobale
+left to right direction
+title Architecture globale de CyberGuard
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam ArrowColor #4A4A4A
+skinparam defaultTextAlignment center
+
+skinparam rectangle {
+  BackgroundColor #F8FBFF
+  BorderColor #2F5D8A
+  RoundCorner 12
+}
+
+actor "Utilisateur metier" as User
+actor "Administrateur" as Admin
+actor "Acteur simule\nou attaquant" as Threat
+
+rectangle "Interface web CyberGuard" as Web
+rectangle "Authentification\net controle d'acces" as Auth
+rectangle "Mini site metier" as Mini
+rectangle "Journalisation\net tracabilite" as Trace
+rectangle "Detection et\nsupervision SOC" as Detect
+rectangle "Honeypot\nsecondaire" as Honey
+database "Base de donnees" as DB
+
+User --> Web : utilise
+Admin --> Web : administre
+Threat --> Web : tente d'acceder
+Threat --> Honey : interagit
+
+Web --> Auth : demande d'acces
+Auth --> Mini : autorise les actions
+Mini --> Trace : produit des traces
+Auth --> Trace : journalise les connexions
+Trace --> Detect : alimente l'analyse
+Mini --> Detect : expose les evenements
+Honey --> Detect : remonte des signaux
+Detect --> Web : alertes, incidents,\nstatistiques
+Detect --> Auth : blocage ou restriction
+
+Auth --> DB
+Mini --> DB
+Trace --> DB
+Detect --> DB
+Honey --> DB
+
+note bottom of Detect
+  Regroupe les regles de detection,
+  les alertes, les incidents
+  et les decisions de traitement.
+end note
+
+note bottom of Web
+  Point d'entree unique pour :
+  connexion, mini site,
+  dashboard et supervision.
+end note
+
+@enduml

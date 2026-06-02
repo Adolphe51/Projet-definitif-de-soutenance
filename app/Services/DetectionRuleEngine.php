@@ -70,6 +70,26 @@ class DetectionRuleEngine
                 'category' => 'application',
             ],
             [
+                'rule_id' => 'http_recon_scan',
+                'name' => 'HTTP Reconnaissance / Nmap',
+                'description' => 'Détecte une reconnaissance HTTP ou un scan Nmap qui atteint le service web',
+                'attack_type' => 'Port Scan',
+                'default_severity' => 'medium',
+                'detection_params' => array_merge(
+                    [
+                        'window_minutes' => 3,
+                        'distinct_paths_threshold' => 4,
+                        'not_found_threshold' => 3,
+                        'sensitive_path_threshold' => 2,
+                        'request_threshold' => 4,
+                    ],
+                    config('cyberguard.detection.recon', [])
+                ),
+                'enabled' => true,
+                'priority' => 3,
+                'category' => 'network',
+            ],
+            [
                 'rule_id' => 'xss_attempt',
                 'name' => 'XSS Attempt',
                 'description' => 'Détecte une tentative de cross-site scripting',
@@ -77,13 +97,14 @@ class DetectionRuleEngine
                 'default_severity' => 'medium',
                 'detection_params' => ['keywords' => ['<script', 'javascript:', 'onerror', 'onclick']],
                 'enabled' => true,
-                'priority' => 3,
+                'priority' => 4,
                 'category' => 'application',
             ],
         ];
 
         $supportedRuleIds = config('cyberguard.detection.focused_rule_ids', [
             'brute_force_ssh',
+            'http_recon_scan',
             'sql_injection',
             'xss_attempt',
         ]);
@@ -148,7 +169,13 @@ class DetectionRuleEngine
         }
 
         $sourceIp = $context['source_ip'] ?? GeoService::generateRandomIp();
-        $geo = GeoService::lookup($sourceIp, !($context['is_simulation'] ?? false));
+        $preferRealGeo = $context['prefer_real_geo'] ?? !($context['is_simulation'] ?? false);
+        $sourceContext = AttackDetectionService::normalizeSourceContext(
+            $context,
+            (bool) ($context['is_simulation'] ?? false),
+            $sourceIp
+        );
+        $geo = GeoService::lookup($sourceIp, $preferRealGeo);
 
         // Générer un incident_id basé sur source_ip + rule_id pour grouper les attaques corrélées
         $incidentId = self::generateIncidentId($sourceIp, $ruleId);
@@ -163,6 +190,10 @@ class DetectionRuleEngine
             'protocol' => $context['protocol'] ?? 'TCP',
             'severity' => $context['severity'] ?? $rule->default_severity,
             'status' => $context['status'] ?? 'detected',
+            'source_scope' => $sourceContext['source_scope'],
+            'source_channel' => $sourceContext['source_channel'],
+            'source_label' => $sourceContext['source_label'],
+            'is_geolocatable' => $sourceContext['is_geolocatable'],
             'country' => $geo['country'] ?? 'Unknown',
             'city' => $geo['city'] ?? null,
             'latitude' => $geo['lat'] ?? null,

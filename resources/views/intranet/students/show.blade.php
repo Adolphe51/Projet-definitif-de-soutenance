@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Détails de l\'usager - Mini site')
+@section('title', 'Détails de l\'usager - Module de démonstration')
 @section('page-title', 'Fiche usager')
 @section('page-subtitle', 'Vue détaillée d’un profil métier utilisé pour démontrer traçabilité, rattachements et corrélation avec le SOC.')
 

@@ -1,0 +1,86 @@
+@startuml Sequence-Utiliser-MiniSite-Metier
+skinparam shadowing false
+skinparam sequenceParticipantBorderColor black
+skinparam sequenceActorBorderColor black
+
+title Diagramme de Séquence - Utiliser le Mini-site Métier\n
+
+actor "Utilisateur\nMétier" as User
+participant "Interface\nMini-site" as UI
+participant "Contrôleur\nMini-site" as Controller
+participant "Service\nDétection" as Detective
+participant "Service\nAudit" as AuditService
+participant "Base de\nDonnées" as DB
+
+note over User, DB
+  L'utilisateur est déjà authentifié avec session OTP valide
+end note
+
+User -> UI: Accès /intranet/users
+UI -> Controller: GET /intranet/users
+Controller -> DB: Récupérer student (usagers)
+DB --> Controller: Liste étudiants
+Controller --> UI: JSON students
+UI --> User: Affiche tableau usagers
+
+User -> UI: Clique pour consulter détail usager
+UI -> Controller: GET /intranet/users/{id}
+Controller -> DB: Récupérer student
+DB --> Controller: Détails student
+Controller --> UI: Données usager
+UI --> User: Affiche fiche
+
+User -> UI: Modifie champ texte (ex: email)
+UI -> Controller: PATCH /intranet/users/{id}
+note right of Controller
+  Middlewares appliqués:
+  - CSRF check
+  - IP authorization
+  - Session validity
+end note
+
+Controller -> Detective: Analyser payload (XSS, SQL injection?)
+Detective -> Detective: Regex + pattern matching
+Detective --> Controller: Résultat analyse
+
+alt Contenu suspect détecté
+    Detective --> Controller: DANGER detected
+    Controller -> AuditService: Auditer action suspecte\n(user, action, payload, risk_level)
+    AuditService -> DB: Enregistrer AuditLog\n(severity='HIGH', detected_pattern)
+    DB --> AuditService: Audit enregistré
+    AuditService --> Controller: Threat recorded
+    
+    Controller -> DB: Créer Alert
+    DB --> Controller: Alert créée
+    
+    Controller --> UI: 403 Forbidden + Alerte SOC
+    UI --> User: "Action bloquée - modération"
+    
+else Contenu valide
+    Controller -> DB: Mettre à jour student
+    DB --> Controller: Student modifié
+    
+    Controller -> AuditService: Auditer action nominale\n(user, entity, change, timestamp)
+    AuditService -> DB: Enregistrer AuditLog\n(severity='LOW', action_type)
+    DB --> AuditService: Audit enregistré
+    AuditService --> Controller: Audit recorded
+    
+    Controller --> UI: 200 OK + confirmation
+    UI --> User: "Modifications enregistrées"
+end
+
+User -> UI: Consulte services
+UI -> Controller: GET /intranet/courses
+Controller -> DB: Récupérer courses (services)
+DB --> Controller: Liste courses
+Controller --> UI: JSON courses
+UI --> User: Affiche catalogue services
+
+User -> UI: Quitte mini-site
+UI -> Controller: POST /auth/logout (session_id)
+Controller -> DB: Révoquer session
+DB --> Controller: Session révoquée
+Controller --> UI: 200 OK
+UI --> User: Utilisateur déconnecté
+
+@enduml

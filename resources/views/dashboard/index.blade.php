@@ -26,11 +26,11 @@
             <h2>Montrer ce que CyberGuard collecte, comprend et aide réellement à traiter.</h2>
             <p>
                 Le parcours recommandé est simple : un utilisateur entre par une connexion sécurisée,
-                agit sur le mini site métier, CyberGuard journalise, détecte si nécessaire,
+                agit sur l'application métier, CyberGuard journalise, détecte si nécessaire,
                 puis l’équipe visualise et traite les événements dans ce dashboard.
             </p>
             <div class="dashboard-actions">
-                <a href="{{ route('intranet.index') }}" class="btn btn-primary">Ouvrir le mini site métier</a>
+                <a href="{{ route('intranet.index') }}" class="btn btn-primary">Ouvrir l'application métier</a>
                 <a href="{{ route('alerts.index') }}" class="btn btn-secondary-outline">Consulter les alertes</a>
             </div>
         </div>
@@ -96,7 +96,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-value" id="stat-intranet-audit">{{ $stats['intranet_audit_events'] }}</div>
-            <div class="stat-label">Actions mini site 24h</div>
+            <div class="stat-label">Actions application 24h</div>
         </div>
         <div class="stat-card">
             <div class="stat-value" id="stat-manual-sims">{{ $stats['manual_simulation_attacks'] }}</div>
@@ -204,7 +204,7 @@
                 </div>
                 <div class="quick-links-grid">
                     <a href="{{ route('intranet.index') }}" class="quick-link-card">
-                        <strong>Mini site métier</strong>
+                        <strong>Application métier</strong>
                         <span>Connexion sécurisée, actions métier, contenu libre et audit.</span>
                     </a>
                     <a href="{{ route('alerts.index') }}" class="quick-link-card">

@@ -1,0 +1,61 @@
+@startuml Activity-Authentification-OTP
+skinparam shadowing false
+skinparam activityBordColor black
+
+title Diagramme d'Activité - Authentification avec OTP\n
+
+start
+:Utilisateur accès /login;
+:Affiche formulaire;
+:Saisit email + mot de passe;
+
+if (Email existe?) then (non)
+    :Afficher "Email non enregistré";
+    stop
+else (oui)
+endif
+
+:Vérifier password_hash;
+
+if (Mot de passe correct?) then (non)
+    :Incrémenter login_attempts;
+    
+    if (attempts >= 5?) then (oui)
+        :Verrouiller compte (30 min);
+        :Afficher "Compte verrouillé";
+        stop
+    else (non)
+        :Afficher "Identifiants invalides";
+        stop
+    endif
+else (oui)
+endif
+
+:Générer OTP (6 chiffres);
+:Enregistrer OTP en BD (TTL: 10 min);
+:Afficher "Vérifiez votre email";
+
+:Utilisateur saisit OTP;
+
+if (OTP expiré?) then (oui)
+    :Afficher "OTP expiré";
+    :Proposer ou renvoyer OTP;
+    stop
+else (non)
+endif
+
+if (OTP valide?) then (non)
+    :Afficher "OTP invalide";
+    stop
+else (oui)
+endif
+
+:Créer SecuritySession;
+:Générer token JWT/CSRF;
+:Enregistrer session en BD\n(ip, user_agent, device_fingerprint);
+:Mettre à jour last_login et last_ip;
+
+:Afficher tableau de bord;
+stop
+
+@enduml

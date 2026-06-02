@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Modifier le service - Mini site')
+@section('title', 'Modifier le service - Module de démonstration')
 @section('page-title', 'Modifier un service')
 @section('page-subtitle', 'Mise à jour d’un élément du catalogue métier avec conservation de la trace et du contexte de modification.')
 

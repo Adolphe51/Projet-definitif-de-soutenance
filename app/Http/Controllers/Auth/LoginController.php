@@ -87,15 +87,7 @@ class LoginController extends Controller
                 ->with('error', 'Impossible d’envoyer le code OTP');
         }
 
-        if (app()->environment('local')) {
-            session([
-                'otp_email' => $email,
-                'debug_otp' => $result['debug_otp'] ?? null,
-            ]);
-            session()->flash('debug_otp_toast', $result['debug_otp'] ?? null);
-        } else {
-            session(['otp_email' => $email]);
-        }
+        $this->storeOtpSessionState($request, $email, $result['debug_otp'] ?? null);
 
         return redirect()->route('otp.verify.form')
             ->with('success', 'Code OTP envoyé à votre email. Veuillez vérifier votre boîte de réception.');
@@ -134,16 +126,7 @@ class LoginController extends Controller
                 ->with('error', 'Impossible d’envoyer le code OTP');
         }
 
-        // Stocker l'email en session et afficher le debug OTP en local
-        if (app()->environment('local')) {
-            session([
-                'otp_email' => $email,
-                'debug_otp' => $result['debug_otp'] ?? null,
-            ]);
-            session()->flash('debug_otp_toast', $result['debug_otp'] ?? null);
-        } else {
-            session(['otp_email' => $email]);
-        }
+        $this->storeOtpSessionState($request, $email, $result['debug_otp'] ?? null);
 
         return redirect()->route('otp.verify.form')
             ->with('success', 'Code OTP renvoyé à votre email. Veuillez vérifier votre boîte de réception.');
@@ -254,6 +237,23 @@ class LoginController extends Controller
             'email' => $user->email,
             'created_at' => now()->timestamp,
         ]);
+    }
+
+    private function storeOtpSessionState(Request $request, string $email, ?string $debugOtp): void
+    {
+        $request->session()->put('otp_email', $email);
+
+        if ($debugOtp === null) {
+            $request->session()->forget([
+                'debug_otp',
+                'debug_otp_toast',
+            ]);
+
+            return;
+        }
+
+        $request->session()->put('debug_otp', $debugOtp);
+        $request->session()->flash('debug_otp_toast', $debugOtp);
     }
 
     private function getPendingAuthentication(Request $request): ?array

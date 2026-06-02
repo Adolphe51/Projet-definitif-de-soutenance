@@ -89,6 +89,38 @@
         });
     };
 
+    async function refreshAlertBadges() {
+        const badges = Array.from(document.querySelectorAll('[data-alert-count]'));
+
+        if (badges.length === 0) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/alerts/api/count', {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const data = await response.json();
+            const count = Number(data.count || 0);
+
+            badges.forEach((badge) => {
+                badge.textContent = count;
+            });
+        } catch (error) {
+            console.error('Impossible d’actualiser le compteur d’alertes.', error);
+        }
+    }
+
+    window.refreshAlertBadges = refreshAlertBadges;
+    refreshAlertBadges();
+    setInterval(refreshAlertBadges, 5000);
+
     const attackChartElement = document.getElementById('attackChart');
     if (attackChartElement && typeof window.Chart === 'function') {
         const attackData = JSON.parse(attackChartElement.dataset.attackData || '{"labels":[],"values":[]}');

@@ -1,0 +1,31 @@
+@startuml CyberGuard-UseCase-Global
+left to right direction
+skinparam actorBackgroundColor LightSteelBlue
+skinparam usecaseBackgroundColor LightGreen
+skinparam arrowColor black
+skinparam shadowing false
+
+title CyberGuard - Diagramme de Cas d'Utilisation Global\n
+
+actor "Utilisateur\nMétier" as UserBusiness
+actor "Administrateur\nSOC" as AdminSOC
+actor "Attaquant /\nRéseau" as Attacker
+
+rectangle "CyberGuard - Système de Sécurité" {
+  usecase "S'authentifier\navec OTP" as UC_AUTH
+  usecase "Consulter\nTableau de bord" as UC_DASHBOARD
+  usecase "Utiliser\nle mini-site\nmétier" as UC_MINISITE
+  usecase "Gérer\nles incidents" as UC_MANAGE_INCIDENTS
+  usecase "Déclencher\npièges" as UC_TRAP
+}
+
+UserBusiness --> UC_AUTH
+UserBusiness --> UC_MINISITE
+
+AdminSOC --> UC_AUTH
+AdminSOC --> UC_DASHBOARD
+AdminSOC --> UC_MANAGE_INCIDENTS
+
+Attacker --> UC_TRAP
+
+@enduml

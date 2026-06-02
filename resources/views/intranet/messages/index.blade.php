@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Messages - Mini site')
+@section('title', 'Messages - Module de démonstration')
 @section('page-title', 'Messages')
 @section('page-subtitle', 'Flux de communication interne utilisé pour montrer contenu libre, lecture métier et détection contextualisée dans CyberGuard.')
 

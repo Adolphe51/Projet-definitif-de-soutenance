@@ -7,14 +7,10 @@ use App\Enums\AuditImportance;
 use App\Enums\AuditResult;
 use App\Services\AttackDetectionService;
 use App\Services\Audit\AuditServiceWrapper;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 
-class ProcessIntranetDataChange implements ShouldQueue
+class ProcessIntranetDataChange
 {
-    use InteractsWithQueue;
-
     protected AttackDetectionService $attackDetectionService;
 
     /**
@@ -73,8 +69,13 @@ class ProcessIntranetDataChange implements ShouldQueue
         if ($this->containsSqlInjectionPatterns($data)) {
             $this->attackDetectionService->detectAttack('SQL Injection', [
                 'source' => 'intranet_' . $event->entityType,
+                'source_scope' => 'internal',
+                'source_channel' => 'intranet',
+                'source_label' => 'Application metier',
+                'is_geolocatable' => false,
                 'payload' => $payload,
                 'ip_address' => $ip,
+                'prefer_real_geo' => false,
                 'description' => "Pattern SQL suspect sur {$event->entityType} ({$event->action})",
             ]);
         }
@@ -82,8 +83,13 @@ class ProcessIntranetDataChange implements ShouldQueue
         if ($this->containsXssPatterns($data)) {
             $this->attackDetectionService->detectAttack('XSS', [
                 'source' => 'intranet_' . $event->entityType,
+                'source_scope' => 'internal',
+                'source_channel' => 'intranet',
+                'source_label' => 'Application metier',
+                'is_geolocatable' => false,
                 'payload' => $payload,
                 'ip_address' => $ip,
+                'prefer_real_geo' => false,
                 'description' => "Pattern XSS suspect sur {$event->entityType} ({$event->action})",
             ]);
         }

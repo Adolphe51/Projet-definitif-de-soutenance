@@ -1,0 +1,131 @@
+@startuml CyberGuardClassDiagramSecurite
+top to bottom direction
+title Diagramme de classes detaille - Noyau securite CyberGuard
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+package "Authentification et acces" {
+  class User {
+    +id : int
+    +uuid : string
+    +nom : string
+    +email : string
+    +is_active : boolean
+  }
+
+  class SecuritySession {
+    +id : uuid
+    +user_id : int
+    +ip_address : string
+    +expires_at : datetime
+    +is_revoked : boolean
+  }
+
+  class AuthCode {
+    +id : uuid
+    +user_id : int
+    +email : string
+    +code_hash : string
+    +expires_at : datetime
+    +attempts : int
+  }
+
+  class UserRole {
+    +user_id : int
+    +role : string
+  }
+
+  class Permission {
+    +id : int
+    +nom : string
+    +ressourceType : string
+  }
+
+  class RolePermission {
+    +role : string
+    +permission_id : int
+  }
+}
+
+package "Detection et supervision" {
+  class DetectionRule {
+    +rule_id : string
+    +name : string
+    +attack_type : string
+    +default_severity : string
+  }
+
+  class Attack {
+    +id : int
+    +rule_id : string
+    +incident_id : string
+    +type : string
+    +source_ip : string
+    +severity : string
+    +status : string
+  }
+
+  class Alert {
+    +id : int
+    +attack_id : int
+    +severity : string
+    +type : string
+    +acknowledged : boolean
+  }
+
+  class BlockedIp {
+    +id : int
+    +ip_address : string
+    +reason : string
+    +attack_id : int
+    +blocked_until : datetime
+  }
+
+  class AttackComment {
+    +id : int
+    +attack_id : int
+    +user_id : int
+    +status : string
+    +comment : text
+  }
+}
+
+package "Traçabilite" {
+  class AuditLog {
+    +id : uuid
+    +actor_id : int
+    +action : string
+    +entity_type : string
+    +entity_id : int
+    +resultat : string
+    +importance : string
+    +ip_address : string
+    +created_at : datetime
+  }
+}
+
+User "1" -- "0..*" SecuritySession
+User "1" -- "0..*" AuthCode
+User "1" -- "0..*" UserRole
+User "1" -- "0..*" AttackComment
+User "0..1" -- "0..*" AuditLog : actor
+Permission "1" -- "0..*" RolePermission
+UserRole "1" -- "0..*" RolePermission : role
+DetectionRule "1" -- "0..*" Attack : rule_id
+Attack "1" -- "0..*" Alert
+Attack "1" -- "0..*" AttackComment
+Attack "0..1" -- "0..1" BlockedIp
+
+note bottom of AuditLog
+  Le journal d'audit relie :
+  connexions, controles d'acces,
+  actions metier et traitements SOC.
+end note
+
+note bottom of Attack
+  Cycle de vie :
+  detected -> investigating
+  -> blocked / resolved
+end note
+
+@enduml

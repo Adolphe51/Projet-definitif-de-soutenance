@@ -1,0 +1,53 @@
+@startuml CyberGuardPackageDiagram
+left to right direction
+title Diagramme global de packages - CyberGuard
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam ArrowColor #4A4A4A
+skinparam package {
+  BackgroundColor #F8FBFF
+  BorderColor #2F5D8A
+}
+
+package "Authentification et acces" as Auth
+package "Mini site metier" as Mini
+package "Detection et supervision" as Detect
+package "Traçabilite" as Trace
+package "Honeypot secondaire" as Honey
+
+Auth --> Mini : autorise l'acces
+Auth --> Trace : journalise les connexions
+Mini --> Trace : journalise les actions
+Mini --> Detect : expose les evenements
+Trace --> Detect : alimente l'analyse
+Detect --> Auth : applique des restrictions
+Detect --> Mini : supervise et alerte
+Honey --> Trace : complete les traces
+Honey --> Detect : remonte des signaux
+
+note bottom of Auth
+  OTP, roles, permissions
+  sessions securisees
+end note
+
+note bottom of Mini
+  Usagers, services,
+  rattachements, messages
+end note
+
+note bottom of Detect
+  Regles, attaques,
+  alertes, blocage, SOC
+end note
+
+note bottom of Trace
+  Journalisation des actions
+  et historique de securite
+end note
+
+note bottom of Honey
+  Composant secondaire
+  de demonstration
+end note
+
+@enduml

@@ -1,0 +1,86 @@
+@startuml CyberGuard-UseCase-Detaille
+left to right direction
+skinparam actorBackgroundColor LightSteelBlue
+skinparam usecaseBackgroundColor LightGreen
+skinparam arrowColor black
+skinparam shadowing false
+
+title CyberGuard - Diagramme de Cas d'Utilisation Détaillé\n
+
+actor "Utilisateur\nMétier" as UserBusiness
+actor "Administrateur\nSOC" as AdminSOC
+actor "Attaquant" as Attacker
+
+rectangle "CyberGuard - Authentification & Accès" {
+  usecase "Saisir\nidentifiants" as UC_ENTER
+  usecase "Valider\nidentifiants" as UC_VALIDATE
+  usecase "Générer\nOTP" as UC_GENERATE_OTP
+  usecase "Vérifier\nOTP" as UC_VERIFY_OTP
+  usecase "Créer\nsession" as UC_SESSION
+  usecase "Se déconnecter" as UC_LOGOUT
+}
+
+rectangle "CyberGuard - Supervision & Incidents" {
+  usecase "Consulter\nTableau de bord" as UC_DASHBOARD
+  usecase "Consulter\nalertes" as UC_ALERTS
+  usecase "Visionner\nincidents" as UC_VIEW_INCIDENTS
+  usecase "Gérer\nincidents" as UC_MANAGE_INCIDENTS
+  usecase "Bloquer\nIP" as UC_BLOCK_IP
+  usecase "Ajouter\ncommentaire" as UC_COMMENT
+}
+
+rectangle "CyberGuard - Mini-site Métier" {
+  usecase "Accéder\nau portail" as UC_ACCESS
+  usecase "Consulter\nutilisateurs" as UC_VIEW_USERS
+  usecase "Consulter\nservices" as UC_VIEW_SERVICES
+  usecase "Modifier\ndonnées" as UC_EDIT_DATA
+  usecase "Auditer\naction" as UC_AUDIT
+}
+
+rectangle "CyberGuard - Détection & Pièges" {
+  usecase "Déclencher\npièges" as UC_TRAP
+  usecase "Lancer\nsimulation" as UC_SIMULATION
+  usecase "Détecter\nattaque" as UC_DETECT
+}
+
+UserBusiness --> UC_ENTER
+UserBusiness --> UC_ACCESS
+UserBusiness --> UC_VIEW_USERS
+UserBusiness --> UC_VIEW_SERVICES
+UserBusiness --> UC_EDIT_DATA
+UserBusiness --> UC_LOGOUT
+
+AdminSOC --> UC_ENTER
+AdminSOC --> UC_DASHBOARD
+AdminSOC --> UC_ALERTS
+AdminSOC --> UC_VIEW_INCIDENTS
+AdminSOC --> UC_MANAGE_INCIDENTS
+AdminSOC --> UC_BLOCK_IP
+AdminSOC --> UC_COMMENT
+AdminSOC --> UC_SIMULATION
+AdminSOC --> UC_LOGOUT
+
+Attacker --> UC_TRAP
+
+' Inclusions et extensions
+UC_ENTER --> UC_VALIDATE : <<include>>
+UC_VALIDATE --> UC_GENERATE_OTP : <<include>>
+UC_GENERATE_OTP --> UC_VERIFY_OTP : <<include>>
+UC_VERIFY_OTP --> UC_SESSION : <<include>>
+
+UC_ACCESS --> UC_SESSION : <<include>>
+UC_VIEW_USERS --> UC_ACCESS : <<include>>
+UC_VIEW_SERVICES --> UC_ACCESS : <<include>>
+UC_EDIT_DATA --> UC_SESSION : <<include>>
+UC_EDIT_DATA --> UC_AUDIT : <<include>>
+UC_EDIT_DATA --> UC_DETECT : <<extend>>
+
+UC_DASHBOARD --> UC_SESSION : <<include>>
+UC_ALERTS --> UC_DASHBOARD : <<include>>
+UC_MANAGE_INCIDENTS --> UC_VIEW_INCIDENTS : <<include>>
+UC_MANAGE_INCIDENTS --> UC_BLOCK_IP : <<include>>
+UC_MANAGE_INCIDENTS --> UC_COMMENT : <<include>>
+
+UC_SIMULATION --> UC_DETECT : <<include>>
+
+@enduml

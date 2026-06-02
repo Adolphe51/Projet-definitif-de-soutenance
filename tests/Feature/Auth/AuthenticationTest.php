@@ -20,6 +20,15 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_login_screen_uses_password_manager_friendly_autocomplete_attributes(): void
+    {
+        $response = $this->get('/login');
+
+        $response->assertOk();
+        $response->assertSee('autocomplete="username"', false);
+        $response->assertSee('autocomplete="current-password"', false);
+    }
+
     public function test_valid_credentials_start_the_otp_flow(): void
     {
         $user = User::factory()->create();
@@ -33,6 +42,23 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('otp.verify.form'));
         $response->assertSessionHas('otp_email', $user->email);
         $response->assertSessionHas('pending_auth', fn (array $pendingAuth) => (int) $pendingAuth['user_id'] === (int) $user->id);
+    }
+
+    public function test_valid_credentials_can_flash_the_debug_otp_when_demo_exposure_is_enabled(): void
+    {
+        Mail::fake();
+        config()->set('cyberguard.auth.otp.debug_code.enabled', true);
+
+        $user = User::factory()->create();
+
+        $response = $this->post(route('otp.send'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect(route('otp.verify.form'));
+        $response->assertSessionHas('debug_otp', fn (?string $code) => is_string($code) && preg_match('/^\d{8}$/', $code) === 1);
+        $response->assertSessionHas('debug_otp_toast', fn (?string $code) => is_string($code) && preg_match('/^\d{8}$/', $code) === 1);
     }
 
     public function test_invalid_password_does_not_start_the_otp_flow(): void
@@ -73,7 +99,7 @@ class AuthenticationTest extends TestCase
 
         $this->get(route('login'))
             ->assertOk()
-            ->assertSeeText('Adresse email professionnelle');
+            ->assertSeeText('Adresse email du compte');
     }
 
     public function test_otp_send_rate_limit_returns_json_for_api_clients(): void

@@ -72,7 +72,8 @@
     @if(session('debug_otp_toast'))
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            toast.show("Code OTP (développement) : {{session('debug_otp_toast')}}", "info", 45000);
+            toast.show(@json('Code OTP (mode demo) : ' . session('debug_otp_toast')), "info",
+                {{ (int) config('cyberguard.auth.otp.debug_code.toast_duration_ms', 45000) }});
         })
     </script>
     @endif

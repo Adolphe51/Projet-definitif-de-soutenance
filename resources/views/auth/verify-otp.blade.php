@@ -20,7 +20,8 @@
                 <label for="email" class="form-label">Compte vérifié</label>
 
                 <input type="email" class="form-input" id="email" name="email"
-                    value="{{ old('email', session('otp_email')) }}" readonly aria-readonly="true">
+                    value="{{ old('email', session('otp_email')) }}" autocomplete="username" spellcheck="false"
+                    readonly aria-readonly="true">
             </div>
 
             <!-- OTP Input -->
@@ -28,7 +29,8 @@
                 <label for="code" class="form-label">Code de vérification à {{ $otpLength }} chiffres</label>
                 <div class="otp-container" aria-label="Code OTP">
                     @for($i = 0; $i < $otpLength; $i++)
-                        <input type="text" class="otp-input" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
+                        <input type="text" class="otp-input" inputmode="numeric" pattern="[0-9]*" maxlength="1"
+                            autocomplete="{{ $i === 0 ? 'one-time-code' : 'off' }}">
                     @endfor
                 </div>
                 <input type="hidden" name="code" id="otpCode">

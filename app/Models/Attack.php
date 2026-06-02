@@ -19,6 +19,10 @@ class Attack extends Model
         'protocol',
         'severity',
         'status',
+        'source_scope',
+        'source_channel',
+        'source_label',
+        'is_geolocatable',
         'country',
         'city',
         'latitude',
@@ -34,6 +38,7 @@ class Attack extends Model
 
     protected $casts = [
         'is_simulation' => 'boolean',
+        'is_geolocatable' => 'boolean',
         'alarm_triggered' => 'boolean',
         'latitude' => 'float',
         'longitude' => 'float',
@@ -113,6 +118,74 @@ class Attack extends Model
             'MITM' => '👤',
             default => '⚡',
         };
+    }
+
+    public function resolveSourceScope(): string
+    {
+        if (in_array($this->source_scope, ['internal', 'external'], true)) {
+            return $this->source_scope;
+        }
+
+        if ($this->resolveSourceChannel() === 'intranet') {
+            return 'internal';
+        }
+
+        return $this->isPrivateOrReservedSourceIp() ? 'internal' : 'external';
+    }
+
+    public function resolveSourceChannel(): string
+    {
+        if (in_array($this->source_channel, ['intranet', 'network', 'honeypot', 'simulation'], true)) {
+            return $this->source_channel;
+        }
+
+        if ($this->is_simulation) {
+            return 'simulation';
+        }
+
+        $description = strtolower((string) $this->description);
+
+        if (str_contains($description, 'pattern sql suspect') || str_contains($description, 'pattern xss suspect')) {
+            return 'intranet';
+        }
+
+        return $this->isPrivateOrReservedSourceIp() ? 'intranet' : 'network';
+    }
+
+    public function resolveSourceLabel(): string
+    {
+        if ($this->source_label) {
+            return $this->source_label;
+        }
+
+        return match ($this->resolveSourceChannel()) {
+            'intranet' => 'Application metier',
+            'honeypot' => 'Honeypot',
+            'simulation' => 'Simulation',
+            default => 'Trafic reseau',
+        };
+    }
+
+    public function isGeolocatable(): bool
+    {
+        if ($this->is_geolocatable !== null) {
+            return $this->is_geolocatable
+                && $this->latitude !== null
+                && $this->longitude !== null;
+        }
+
+        return $this->resolveSourceScope() === 'external'
+            && $this->latitude !== null
+            && $this->longitude !== null;
+    }
+
+    private function isPrivateOrReservedSourceIp(): bool
+    {
+        return !filter_var(
+            $this->source_ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        );
     }
 
     // Scopes

@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->append(\App\Http\Middleware\NetworkReconDetectionMiddleware::class);
+
         // 🔐 CORRECTION : Ordre des middlewares respecté
         // L'ordre est critique pour la sécurité :
         // 1. csrf - Protection CSRF en premier

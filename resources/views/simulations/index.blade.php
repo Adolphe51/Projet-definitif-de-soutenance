@@ -352,7 +352,6 @@ async function launchSimulation() {
 
             addLog(`[${now()}] Simulation ${type} démarrée vers ${target}`, 'info');
             addLog(`[${now()}] Intensité: ${intensity} | Durée: ${duration}s`, 'info');
-
             simInterval = window.setInterval(runSimStep, 1500);
             showToast(`Simulation ${type} lancée vers ${target}.`, 'success');
             startSimulationSignal(intensity);

@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title', 'Géolocalisation')
-@section('page-title', 'Géolocalisation des attaquants')
-@section('page-subtitle', 'Visualisation géographique des attaques, regroupement par pays et lecture rapide des zones les plus actives.')
+@section('title', 'Sources externes')
+@section('page-title', 'Carte des sources externes')
+@section('page-subtitle', 'Visualisation reservee aux evenements cartographiables, avec separation explicite des signaux internes du reseau local.')
 
 @section('content')
     <section class="dashboard-hero">
         <div class="dashboard-hero-copy">
             <span class="dashboard-chip">Analyse géographique</span>
-            <h2>Une carte plus claire pour visualiser d’où viennent les attaques et où concentrer l’analyse.</h2>
+            <h2>Une carte reservee aux sources externes pour eviter de melanger activite intranet et geolocalisation mondiale.</h2>
             <p>
-                Cette vue regroupe la dimension spatiale du module CyberGuard pour ne pas mélanger
-                la supervision cartographique avec le dashboard général ou le traitement détaillé des incidents.
+                Cette vue se concentre sur les attaques reseau externes et les sources cartographiables.
+                Les evenements internes sont resumes a part pour rester coherents avec un intranet local.
             </p>
             <div class="dashboard-actions">
                 <a href="{{ route('attacks.index') }}" class="btn btn-primary">Retour aux incidents</a>
@@ -22,7 +22,7 @@
             <div class="dashboard-health-label">Vue cartographique</div>
             <div class="dashboard-health-value">Carte actualisée toutes les 10 secondes</div>
             <div class="dashboard-health-meta">
-                Les lignes et points sont recalculés à partir des dernières attaques géolocalisées.
+                Seules les sources externes geolocalisables alimentent la carte.
             </div>
             <div class="dashboard-health-stats">
                 <div>
@@ -31,7 +31,7 @@
                 </div>
                 <div>
                     <strong id="attacker-count">0</strong>
-                    <span>pays visibles</span>
+                    <span>zones visibles</span>
                 </div>
             </div>
         </div>
@@ -39,9 +39,9 @@
 
     <section class="attacks-overview-grid">
         <article class="attacks-overview-card attacks-overview-card--neutral">
-            <span class="attacks-overview-label">Géolocalisés</span>
+            <span class="attacks-overview-label">Externes</span>
             <strong id="geo-total-card">0</strong>
-            <p>Sources visibles sur la carte actuelle.</p>
+            <p>Sources externes visibles sur la carte actuelle.</p>
         </article>
         <article class="attacks-overview-card attacks-overview-card--critical">
             <span class="attacks-overview-label">Critiques</span>
@@ -117,8 +117,8 @@
         <section class="card dashboard-panel geo-list-shell">
             <div class="section-header">
                 <div>
-                    <div class="section-title">Pays les plus actifs</div>
-                    <p class="section-intro">Regroupement rapide par pays pour identifier les zones les plus présentes dans le flux.</p>
+                    <div class="section-title">Sources externes les plus actives</div>
+                    <p class="section-intro">Regroupement par pays pour identifier les zones externes les plus presentes dans le flux.</p>
                 </div>
             </div>
 
@@ -127,6 +127,21 @@
                     <div class="empty-state-icon">🌍</div>
                     <p class="empty-state-title">Chargement de la carte</p>
                     <p class="empty-state-text">Les pays actifs apparaîtront ici après le premier chargement des données.</p>
+                </div>
+            </div>
+
+            <div class="section-header" style="margin-top: 1.5rem;">
+                <div>
+                    <div class="section-title">Evenements internes non cartographies</div>
+                    <p class="section-intro">Les signaux issus du reseau local ou de l application metier restent visibles ici sans passer par une carte monde.</p>
+                </div>
+            </div>
+
+            <div class="geo-list" id="internal-summary">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🏢</div>
+                    <p class="empty-state-title">Aucun signal interne recent</p>
+                    <p class="empty-state-text">Les evenements internes apparaitront ici s ils sont detectes.</p>
                 </div>
             </div>
         </section>
@@ -167,6 +182,7 @@ async function loadGeoData() {
 
         renderMapPoints(data.attacks);
         renderAttackerList(data.attacks);
+        renderInternalSummary(data.internal_summary || []);
     } catch (error) {
         console.error(error);
     }
@@ -272,6 +288,35 @@ function renderAttackerList(attacks) {
             <div class="geo-list-side">
                 <div class="geo-list-count">${info.count}</div>
                 <span class="badge badge-${info.severity}">${info.severity.toUpperCase()}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderInternalSummary(items) {
+    const container = document.getElementById('internal-summary');
+
+    if (!items.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🏢</div>
+                <p class="empty-state-title">Aucun signal interne recent</p>
+                <p class="empty-state-text">Les evenements internes lies au mini site ou au LAN apparaitront ici.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = items.map((item) => `
+        <div class="geo-list-item">
+            <span class="geo-list-flag">🏢</span>
+            <div class="geo-list-main">
+                <div class="geo-list-country">${item.label}</div>
+                <div class="geo-list-city">${item.ip} · ${item.time}</div>
+            </div>
+            <div class="geo-list-side">
+                <div class="geo-list-count">${item.count}</div>
+                <span class="badge badge-${item.severity}">${item.severity.toUpperCase()}</span>
             </div>
         </div>
     `).join('');

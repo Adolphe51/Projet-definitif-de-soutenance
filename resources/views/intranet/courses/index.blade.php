@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Services - Mini site')
+@section('title', 'Services - Module de démonstration')
 @section('page-title', 'Services')
 @section('page-subtitle', 'Catalogue métier réduit servant de support aux scénarios démontrables et aux traces d’activité utiles à CyberGuard.')
 
@@ -14,7 +14,7 @@
         <div class="intranet-metric">
             <span>Catalogue</span>
             <strong>{{ $courses->total() }}</strong>
-            <p class="intranet-empty-text">service(s) visibles dans le mini site métier.</p>
+            <p class="intranet-empty-text">service(s) visibles dans l'application métier.</p>
         </div>
         <div class="intranet-metric">
             <span>Actifs</span>

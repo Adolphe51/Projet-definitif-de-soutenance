@@ -96,7 +96,7 @@ class OTPService
         return [
             'success' => true,
             'email' => $email,
-            'debug_otp' => app()->environment('local') ? $code : null
+            'debug_otp' => $this->shouldExposeDebugCode() ? $code : null,
         ];
     }
 
@@ -322,5 +322,10 @@ class OTPService
             ->where('expires_at', '>', now())
             ->latest()
             ->first();
+    }
+
+    private function shouldExposeDebugCode(): bool
+    {
+        return (bool) config('cyberguard.auth.otp.debug_code.enabled', app()->environment('local'));
     }
 }

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Créer un service - Mini site')
+@section('title', 'Créer un service - Module de démonstration')
 @section('page-title', 'Créer un service')
 @section('page-subtitle', 'Ajout d’un nouveau point d’entrée métier dans un périmètre volontairement compact pour la soutenance.')
 

@@ -20,6 +20,7 @@ class AttackDetectionService
 
         return match ($normalized) {
             'brute_force', 'brute_force_ssh' => 'brute_force_ssh',
+            'port_scan', 'http_recon_scan', 'reconnaissance_http' => 'http_recon_scan',
             'sql_injection' => 'sql_injection',
             'xss', 'xss_attempt' => 'xss_attempt',
             default => null,
@@ -92,11 +93,11 @@ class AttackDetectionService
     {
         $ip = $providedContext['source_ip'] ?? GeoService::generateRandomIp();
 
-        $baseContext = [
+        $baseContext = array_merge([
             'source_ip' => $ip,
             'target_ip' => '192.168.1.1',
             'is_simulation' => $isSimulation,
-        ];
+        ], self::normalizeSourceContext($providedContext, $isSimulation, $ip));
 
         // Contexte spécifique selon la règle
         switch ($ruleId) {
@@ -115,6 +116,14 @@ class AttackDetectionService
                     'packet_count' => rand(5, 25),
                     'payload' => "' UNION SELECT * FROM users--",
                     'description' => "Tentative d'injection SQL depuis {$ip}",
+                ]);
+
+            case 'http_recon_scan':
+                return array_merge($baseContext, [
+                    'target_port' => 80,
+                    'protocol' => 'HTTP',
+                    'packet_count' => rand(4, 20),
+                    'description' => "Reconnaissance HTTP suspecte détectée depuis {$ip}",
                 ]);
 
             case 'xss_attempt':
@@ -145,6 +154,7 @@ class AttackDetectionService
     {
         $ip = GeoService::generateRandomIp();
         $geo = GeoService::lookup($ip, !$isSimulation);
+        $sourceContext = self::normalizeSourceContext([], $isSimulation, $ip);
 
         $type = Attack::attackTypes()[array_rand(Attack::attackTypes())];
         $severity = self::weightedRandom(
@@ -160,6 +170,10 @@ class AttackDetectionService
             'protocol' => self::getProtocolForType($type),
             'severity' => $severity,
             'status' => 'detected',
+            'source_scope' => $sourceContext['source_scope'],
+            'source_channel' => $sourceContext['source_channel'],
+            'source_label' => $sourceContext['source_label'],
+            'is_geolocatable' => $sourceContext['is_geolocatable'],
             'country' => $geo['country'],
             'city' => $geo['city'],
             'latitude' => $geo['lat'],
@@ -184,7 +198,9 @@ class AttackDetectionService
     private function detectLegacyAttack(string $type, array $context = []): Attack
     {
         $sourceIp = $context['ip_address'] ?? '127.0.0.1';
-        $geo = GeoService::lookup($sourceIp, true);
+        $preferRealGeo = $context['prefer_real_geo'] ?? true;
+        $sourceContext = self::normalizeSourceContext($context, false, $sourceIp);
+        $geo = GeoService::lookup($sourceIp, $preferRealGeo);
 
         $attack = Attack::create([
             'type' => $type,
@@ -194,6 +210,10 @@ class AttackDetectionService
             'protocol' => $context['protocol'] ?? 'TCP',
             'severity' => $context['severity'] ?? 'medium',
             'status' => $context['status'] ?? 'detected',
+            'source_scope' => $sourceContext['source_scope'],
+            'source_channel' => $sourceContext['source_channel'],
+            'source_label' => $sourceContext['source_label'],
+            'is_geolocatable' => $sourceContext['is_geolocatable'],
             'country' => $geo['country'] ?? null,
             'city' => $geo['city'] ?? null,
             'latitude' => $geo['lat'] ?? null,
@@ -249,6 +269,58 @@ class AttackDetectionService
             'Brute Force' => "Attaque force brute depuis {$ip}.",
             default => "Activité suspecte détectée depuis {$ip} ({$city})."
         };
+    }
+
+    public static function normalizeSourceContext(array $context = [], bool $isSimulation = false, ?string $sourceIp = null): array
+    {
+        $ip = $sourceIp ?? $context['source_ip'] ?? $context['ip_address'] ?? '127.0.0.1';
+        $channel = $context['source_channel'] ?? null;
+
+        if ($channel === null) {
+            if ($isSimulation) {
+                $channel = 'simulation';
+            } elseif (($context['source'] ?? null) && str_starts_with((string) $context['source'], 'intranet_')) {
+                $channel = 'intranet';
+            } else {
+                $channel = self::isPrivateOrReservedIp($ip) ? 'intranet' : 'network';
+            }
+        }
+
+        $scope = $context['source_scope'] ?? match ($channel) {
+            'intranet' => 'internal',
+            'honeypot', 'network' => 'external',
+            'simulation' => self::isPrivateOrReservedIp($ip) ? 'internal' : 'external',
+            default => self::isPrivateOrReservedIp($ip) ? 'internal' : 'external',
+        };
+
+        $label = $context['source_label'] ?? match ($channel) {
+            'intranet' => 'Application metier',
+            'honeypot' => 'Honeypot',
+            'simulation' => 'Simulation',
+            default => 'Trafic reseau',
+        };
+
+        $isGeolocatable = $context['is_geolocatable'] ?? ($scope === 'external' && !self::isPrivateOrReservedIp($ip));
+
+        return [
+            'source_scope' => $scope,
+            'source_channel' => $channel,
+            'source_label' => $label,
+            'is_geolocatable' => (bool) $isGeolocatable,
+        ];
+    }
+
+    public static function isPrivateOrReservedIp(?string $ip): bool
+    {
+        if (!$ip) {
+            return true;
+        }
+
+        return !filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        );
     }
 
     /**

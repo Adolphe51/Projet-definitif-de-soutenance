@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Usagers - Mini site')
+@section('title', 'Usagers - Module de démonstration')
 @section('page-title', 'Usagers')
 @section('page-subtitle', 'Référentiel métier compact pour illustrer consultation sécurisée, modifications auditées et corrélation avec CyberGuard.')
 

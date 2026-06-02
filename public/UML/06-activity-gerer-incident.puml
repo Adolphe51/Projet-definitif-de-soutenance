@@ -1,0 +1,49 @@
+@startuml Activity-Gerer-Incident-SOC
+skinparam shadowing false
+skinparam activityBorderColor black
+
+title Diagramme d'Activité - Gérer un Incident SOC\n
+
+start
+:Admin accès tableau incidents;
+:Affiche liste attacks avec géo;
+
+:Utilisateur sélectionne un incident;
+:Charge fiche détail\n(source IP, destination, payload, coordonnées);
+
+if (Analyse préliminaire) then (menace confirmée)
+    :Change statut → "En cours d'investigation";
+else (faux positif)
+    :Change statut → "Non légitime";
+    stop
+endif
+
+:Ajoute commentaire SOC\n(observations, contexte);
+
+if (Source IP dangereuse?) then (oui)
+    :Copier IP source;
+    :Ajouter à liste blocage;
+    :Enregistrer raison blocage;
+    :Appliquer blocage firewall;
+    :Notifier acteur réseau;
+else (non)
+    :Analyser pattern d'attaque;
+    :Chercher incidents similaires;
+    :Identifier tendance/campagne;
+endif
+
+if (Incident = résolvable?) then (non)
+    :Escalader à équipe spécialisée;
+    :Ajouter tag "ESCALADE";
+else (oui)
+    :Mettre en place mitigation;
+    :Valider résolution;
+endif
+
+:Change statut → "Résolu";
+:Archiver incident;
+:Quitter incident;
+
+stop
+
+@enduml

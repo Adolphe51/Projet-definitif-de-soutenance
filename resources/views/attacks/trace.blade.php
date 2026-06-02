@@ -1,19 +1,20 @@
 @extends('layouts.app')
-@section('title', 'Traçage ' . $ip)
-@section('page-title', 'Traçage d’un attaquant')
-@section('page-subtitle', 'Lecture simplifiée du parcours réseau, des données géographiques et de la dernière activité associée à cette IP.')
+@section('title', 'Fiche source ' . $ip)
+@section('page-title', 'Fiche source')
+@section('page-subtitle', 'Lecture coherente d une source interne ou externe, avec distinction claire entre reseau local et origine cartographiable.')
 
 @section('content')
     @php
         $alarmAlreadyTriggered = (bool) ($attack?->alarm_triggered ?? false);
+        $isInternalSource = $sourceScope === 'internal';
     @endphp
     <section class="dashboard-hero">
         <div class="dashboard-hero-copy">
-            <span class="dashboard-chip">Trace IP</span>
-            <h2>Suivre rapidement l’origine d’une adresse IP sans quitter le module incidents.</h2>
+            <span class="dashboard-chip">{{ $isInternalSource ? 'Source interne' : 'Source externe' }}</span>
+            <h2>{{ $isInternalSource ? 'Une fiche source adaptee au reseau local plutot qu une fausse geolocalisation mondiale.' : 'Une fiche source pour qualifier proprement une origine externe et son dernier contexte incident.' }}</h2>
             <p>
-                Cette vue rassemble les éléments utiles pour la soutenance : identification de l’IP,
-                résumé géographique, pseudo traceroute et lien direct vers le dernier incident connu.
+                Cette vue rassemble les informations utiles sur une source observee, son canal d origine,
+                sa derniere activite et les actions encore pertinentes pour l analyse.
             </p>
             <div class="dashboard-actions">
                 <a href="{{ route('attacks.index') }}" class="btn btn-primary">Retour aux attaques</a>
@@ -24,15 +25,15 @@
         </div>
 
         <div class="dashboard-health {{ $attack?->severity === 'critical' ? 'dashboard-health--critical' : 'dashboard-health--medium' }}">
-            <div class="dashboard-health-label">IP tracée</div>
+            <div class="dashboard-health-label">{{ $sourceLabel }}</div>
             <div class="dashboard-health-value ip-addr">{{ $ip }}</div>
             <div class="dashboard-health-meta">
-                {{ $geo['city'] }}, {{ $geo['country'] }} · {{ $geo['isp'] }}
+                {{ $isInternalSource ? 'Reseau local' : ($geo['city'] . ', ' . $geo['country']) }} · {{ $geo['isp'] }}
             </div>
             <div class="dashboard-health-stats">
                 <div>
-                    <strong>{{ $attack ? strtoupper($attack->severity) : 'N/A' }}</strong>
-                    <span>dernière sévérité</span>
+                    <strong>{{ strtoupper($sourceScope) }}</strong>
+                    <span>portee source</span>
                 </div>
                 <div>
                     <strong>{{ $attack ? $attack->created_at->diffForHumans() : 'Aucune' }}</strong>
@@ -45,9 +46,9 @@
     <div class="trace-layout-grid">
         <div class="stack-md">
             <section class="trace-terminal-shell">
-                <div class="section-title section-title--spaced">Traceroute simulé</div>
+                <div class="section-title section-title--spaced">{{ $isInternalSource ? 'Parcours interne observe' : 'Trajet reseau estime' }}</div>
                 <div class="trace-terminal">
-                    <div style="color: #93c5fd; margin-bottom: 0.75rem;">$ traceroute {{ $ip }}</div>
+                    <div style="color: #93c5fd; margin-bottom: 0.75rem;">{{ $isInternalSource ? '$ chemin-source ' : '$ source-trace ' }}{{ $ip }}</div>
                     <div id="trace-output"></div>
                 </div>
             </section>
@@ -55,13 +56,21 @@
             <section class="card dashboard-panel">
                 <div class="section-header">
                     <div>
-                        <div class="section-title">Résultats géographiques</div>
-                        <p class="section-intro">Résumé des informations disponibles pour situer et qualifier l’origine de l’adresse tracée.</p>
+                        <div class="section-title">Identite de la source</div>
+                        <p class="section-intro">Resume des informations disponibles pour qualifier proprement cette origine.</p>
                     </div>
                 </div>
 
                 <div class="trace-geo-grid">
-                    @foreach(['Pays' => $geo['country'], 'Ville' => $geo['city'], 'Latitude' => $geo['lat'] ?? 'N/A', 'Longitude' => $geo['lon'] ?? 'N/A', 'ISP' => $geo['isp'], 'ASN' => 'AS' . rand(10000,65000)] as $label => $value)
+                    @foreach([
+                        'Portee' => strtoupper($sourceScope),
+                        'Canal' => strtoupper($sourceChannel),
+                        'Etiquette' => $sourceLabel,
+                        'Zone' => $isInternalSource ? 'Reseau local' : $geo['country'],
+                        'Localite' => $isInternalSource ? 'Segment interne' : $geo['city'],
+                        'Fournisseur / reseau' => $geo['isp'],
+                        'Geolocalisable' => $isGeolocatable ? 'Oui' : 'Non'
+                    ] as $label => $value)
                         <article class="trace-geo-card">
                             <span>{{ $label }}</span>
                             <strong>{{ $value }}</strong>
@@ -74,22 +83,24 @@
                 <section class="card dashboard-panel">
                     <div class="section-header">
                         <div>
-                            <div class="section-title">Dernière attaque liée</div>
-                            <p class="section-intro">Raccourci vers le dernier incident connu sur cette IP pour basculer rapidement en analyse.</p>
+                            <div class="section-title">Activite recente liee</div>
+                            <p class="section-intro">Les derniers incidents vus sur cette source pour recoller rapidement le contexte.</p>
                         </div>
                     </div>
 
-                    <div class="feed-item">
-                        <div class="feed-icon">{{ $attack->type_icon }}</div>
-                        <div class="feed-content">
-                            <div class="feed-title">
-                                <span>{{ $attack->type }}</span>
-                                <span class="badge badge-{{ $attack->severity }}">{{ strtoupper($attack->severity) }}</span>
+                    @foreach($recentActivities as $activity)
+                        <div class="feed-item">
+                            <div class="feed-icon">{{ $activity->type_icon }}</div>
+                            <div class="feed-content">
+                                <div class="feed-title">
+                                    <span>{{ $activity->type }}</span>
+                                    <span class="badge badge-{{ $activity->severity }}">{{ strtoupper($activity->severity) }}</span>
+                                </div>
+                                <div class="feed-details">{{ $activity->created_at->diffForHumans() }} · {{ $activity->target_ip }} · {{ $activity->resolveSourceLabel() }}</div>
                             </div>
-                            <div class="feed-details">{{ $attack->created_at->diffForHumans() }} · {{ $attack->target_ip }}</div>
+                            <a href="{{ route('attacks.show', $activity->id) }}" class="btn btn-primary btn-sm">Voir details</a>
                         </div>
-                        <a href="{{ route('attacks.show', $attack->id) }}" class="btn btn-primary btn-sm">Voir détails</a>
-                    </div>
+                    @endforeach
                 </section>
             @endif
         </div>
@@ -140,13 +151,7 @@ const traceState = {
     alarmTriggered: @json($alarmAlreadyTriggered),
 };
 
-const hops = [
-    '192.168.1.1',
-    '10.{{ rand(0,255) }}.{{ rand(0,255) }}.1',
-    '{{ preg_replace('/\.\d+$/', '.1', $ip) }}',
-    '{{ preg_replace('/\.\d+$/', '.254', $ip) }}',
-    '{{ $ip }}'
-];
+const hops = @json($traceHops);
 
 let traceIndex = 0;
 const output = document.getElementById('trace-output');

@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Mini Site Métier')
-@section('page-title', 'Mini site métier')
+@section('title', 'Module de démonstration')
+@section('page-title', 'Application métier')
 @section('page-subtitle', 'Zone applicative sécurisée utilisée pendant la soutenance pour montrer connexion protégée, actions auditées et remontée d’événements vers CyberGuard.')
 
 @section('content')
     <section class="dashboard-hero">
         <div class="dashboard-hero-copy">
             <span class="dashboard-chip">Parcours démonstration</span>
-            <h2>Un mini site simple, crédible et directement relié au SOC CyberGuard.</h2>
+            <h2>Une plateforme web de démonstration simple, crédible et directement relié au SOC CyberGuard.</h2>
             <p>
                 L’idée n’est pas de multiplier les modules, mais de montrer un flux clair :
                 connexion sécurisée, action métier, audit, détection éventuelle, puis analyse dans le dashboard.
@@ -78,7 +78,7 @@
         <div class="intranet-metric">
             <span>Étape 2</span>
             <strong>Action métier</strong>
-            <p class="intranet-empty-text">Consultation, création ou modification d’une donnée sur le mini site.</p>
+            <p class="intranet-empty-text">Consultation, création ou modification d’une donnée sur l'application métier.</p>
         </div>
         <div class="intranet-metric">
             <span>Étape 3</span>

@@ -1,0 +1,70 @@
+@startuml Sequence-Gerer-Incident-SOC
+skinparam shadowing false
+skinparam sequenceParticipantBorderColor black
+skinparam sequenceActorBorderColor black
+
+title Diagramme de Séquence - Gérer un Incident SOC\n
+
+actor "Admin SOC" as Admin
+participant "Interface\nSOC" as UI
+participant "Contrôleur\nIncidents" as Controller
+participant "Service\nDétection" as Detective
+participant "Service\nBlockage" as BlockService
+participant "Base de\nDonnées" as DB
+
+Admin -> UI: Accès /attacks (incidents)
+UI -> Controller: GET /api/attacks
+Controller -> DB: Récupérer tous les attacks
+DB --> Controller: Liste des attacks
+Controller --> UI: JSON (incidents, géo, status)
+UI --> Admin: Affiche tableau incidents
+
+Admin -> UI: Clique sur un incident
+UI -> Controller: GET /api/attacks/{id}
+Controller -> DB: Chercher attack par ID
+DB --> Controller: Attack + commentaires + géo
+Controller --> UI: Détails incident (JSON)
+UI --> Admin: Affiche fiche incident
+
+Admin -> UI: Change statut → "En cours"
+UI -> Controller: PATCH /api/attacks/{id}/status
+Controller -> DB: Mettre à jour attack.status
+DB --> Controller: Status modifié
+Controller --> UI: 200 OK
+UI --> Admin: Affiche changement
+
+Admin -> UI: Ajoute commentaire SOC
+UI -> Controller: POST /api/attacks/{id}/comments
+Controller -> DB: Créer AttackComment\n(user_id, comment, status)
+DB --> Controller: Comment sauvegardé
+Controller --> UI: 201 Created
+UI --> Admin: Affiche commentaire
+
+alt Décision: Bloquer IP source
+    Admin -> UI: Clique "Bloquer IP"
+    UI -> Controller: POST /api/blocked-ips
+    
+    Controller -> BlockService: bloquer IP source\n(source_ip, raison)
+    BlockService -> DB: Enregistrer BlockedIP\n(ip, status='active', expires_at)
+    DB --> BlockService: IP bloquée
+    BlockService -> BlockService: Ajouter IP aux firewall rules
+    
+    BlockService --> Controller: IP bloquée avec succès
+    Controller -> DB: Enregistrer action audit
+    DB --> Controller: Audit enregistré
+    Controller --> UI: 200 OK + "IP bloquée"
+    UI --> Admin: Affiche confirmation
+
+else Décision: Marquer investigation complète
+    Admin -> UI: Change statut → "Résolu"
+    UI -> Controller: PATCH /api/attacks/{id}/status
+    Controller -> DB: status = 'resolved'
+    DB --> Controller: Statut modifié
+    Controller --> UI: 200 OK
+    UI --> Admin: Incident fermé
+end
+
+Admin -> UI: Quitte la fiche
+UI --> Admin: Retour à la liste
+
+@enduml

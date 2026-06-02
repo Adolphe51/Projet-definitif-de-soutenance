@@ -18,6 +18,12 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping()
                  ->runInBackground();
 
+        if (config('cyberguard.detection.log_ingestion.enabled') && config('cyberguard.detection.log_ingestion.access_log_path')) {
+            $schedule->command('cyberguard:collect-web-logs')
+                ->everyMinute()
+                ->withoutOverlapping();
+        }
+
         // Nettoyage des vieilles attaques (toujours actif - maintenance)
         $schedule->command('cyberguard:cleanup --days=30')
                  ->daily()

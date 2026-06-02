@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Détails du service - Mini site')
+@section('title', 'Détails du service - Module de démonstration')
 @section('page-title', 'Fiche service')
 @section('page-subtitle', 'Vue détaillée d’un service métier utilisé pour illustrer contenus sensibles, rattachements et détection contextualisée.')
 

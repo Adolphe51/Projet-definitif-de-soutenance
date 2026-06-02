@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Alertes')
 @section('page-title', 'Centre d’alertes')
-@section('page-subtitle', 'Lecture corrélée des événements de sécurité issus de l’authentification, du mini site métier, du réseau et des simulations manuelles.')
+@section('page-subtitle', 'Lecture corrélée des événements de sécurité issus de l’authentification, de notre application métier, du réseau et des simulations manuelles.')
 
 @section('content')
     @php
@@ -13,7 +13,7 @@
                 $action === 'login_failed' => 'Connexion refusée',
                 $action === 'otp_verified' => 'OTP validé',
                 $action === 'otp_failed' => 'OTP refusé',
-                str_starts_with($action, 'intranet_') => 'Action mini site',
+                str_starts_with($action, 'intranet_') => 'Action application métier',
                 str_starts_with($action, 'attack.') => 'Traitement incident',
                 str_starts_with($action, 'blocked_ip.') => 'Blocage IP',
                 default => 'Événement sécurité',
@@ -26,11 +26,11 @@
             <span class="dashboard-chip">Corrélation</span>
             <h2>Un centre d’alertes qui raconte clairement ce qui s’est passé et pourquoi.</h2>
             <p>
-                Les signaux issus de l’authentification, des actions du mini site, des attaques réseau
+                Les signaux issus de l’authentification, des actions de l'application métier, des attaques réseau
                 et des simulations manuelles sont lus ici dans une seule vue cohérente.
             </p>
             <div class="dashboard-actions">
-                <a href="{{ route('intranet.index') }}" class="btn btn-primary">Retour au mini site</a>
+                <a href="{{ route('intranet.index') }}" class="btn btn-primary">Retour à l'application métier</a>
                 <a href="{{ route('dashboard') }}" class="btn btn-secondary-outline">Retour au dashboard</a>
             </div>
         </div>
@@ -64,7 +64,7 @@
             <p>Connexions et validations OTP visibles pour démontrer l’entrée sécurisée.</p>
         </article>
         <article class="attacks-overview-card attacks-overview-card--high">
-            <span class="attacks-overview-label">Mini site 24h</span>
+            <span class="attacks-overview-label">Application 24h</span>
             <strong>{{ $summary['intranetAudit24h'] }}</strong>
             <p>Actions métier auditées et potentiellement corrélées à une détection.</p>
         </article>
@@ -256,6 +256,7 @@ async function acknowledgeAlert(id, btn) {
 
         btn.outerHTML = '<span class="alert-acknowledged-label">Acquittée</span>';
         updateAlertCount();
+        window.refreshAlertBadges?.();
         showToast('Alerte acquittée.', 'success', 2500);
     } catch (error) {
         btn.disabled = false;
@@ -280,6 +281,7 @@ async function acknowledgeAll() {
         });
 
         updateAlertCount();
+        window.refreshAlertBadges?.();
         showToast('Toutes les alertes ont été marquées comme lues.', 'success');
     } catch (error) {
         showToast('La mise à jour globale a échoué.', 'error');
@@ -288,16 +290,9 @@ async function acknowledgeAll() {
 
 function updateAlertCount() {
     const remaining = document.querySelectorAll('.alert-card.unread').length;
-    const topbar = document.getElementById('topbar-alert-count');
-    const nav = document.getElementById('nav-alert-count');
-
-    if (topbar) {
-        topbar.textContent = remaining;
-    }
-
-    if (nav) {
-        nav.textContent = remaining;
-    }
+    document.querySelectorAll('[data-alert-count]').forEach((badge) => {
+        badge.textContent = remaining;
+    });
 }
 
 let alertAudioContext = null;
@@ -364,9 +359,101 @@ function triggerManualAlarm() {
 
 let lastAlertId = {{ $alerts->first()?->id ?? 0 }};
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+function severityEmoji(severity) {
+    return {
+        critical: '💀',
+        high: '🔴',
+        medium: '⚠️',
+        low: '✅',
+    }[severity] || '⚠️';
+}
+
+function renderAlertCard(alert) {
+    const attackMeta = alert.attack ? `
+        <div class="alert-card-meta">
+            <span class="badge badge-${escapeHtml(alert.attack.severity)}">${escapeHtml(alert.attack.type)}</span>
+            <span class="text-muted-small">${escapeHtml(alert.attack.source_ip)} → ${escapeHtml(alert.attack.target_ip)}</span>
+            ${alert.attack.rule_name ? `<span class="text-muted-small">Règle: ${escapeHtml(alert.attack.rule_name)}</span>` : ''}
+        </div>
+    ` : '';
+
+    const attackLink = alert.attack_url ? `
+        <div class="alert-card-link">
+            <a href="${escapeHtml(alert.attack_url)}" class="btn btn-secondary-outline btn-sm">
+                Consulter l’attaque liée #${escapeHtml(alert.attack_id)}
+            </a>
+        </div>
+    ` : '';
+
+    const acknowledgeAction = @json($admin)
+        ? `<button class="btn btn-success btn-sm" onclick="acknowledgeAlert(${Number(alert.id)}, this)">Acquitter</button>`
+        : '';
+
+    return `
+        <article class="alert-card alert-card--center sev-${escapeHtml(alert.severity)} unread" id="alert-${Number(alert.id)}">
+            <div class="alert-card-icon" aria-hidden="true">${severityEmoji(alert.severity)}</div>
+            <div class="alert-card-body">
+                <div class="alert-card-head">
+                    <div>
+                        <div class="alert-title">${escapeHtml(alert.title)}</div>
+                        <div class="alert-msg">${escapeHtml(alert.message)}</div>
+                    </div>
+                    <span class="badge badge-critical alert-fresh-badge">Non lue</span>
+                </div>
+                <div class="alert-card-meta">
+                    <span class="badge badge-${escapeHtml(alert.severity)}">${escapeHtml(String(alert.severity).toUpperCase())}</span>
+                    <span class="badge badge-info">${escapeHtml(alert.origin_label || 'Événement sécurité')}</span>
+                    ${alert.type ? `<span class="badge badge-primary">${escapeHtml(String(alert.type).toUpperCase())}</span>` : ''}
+                    <span class="mono text-muted-small">${escapeHtml(alert.created_at_human || 'À l’instant')}</span>
+                    <span class="text-muted-small">${escapeHtml(alert.created_at_label || '')}</span>
+                </div>
+                ${attackMeta}
+                ${attackLink}
+            </div>
+            <div class="alert-card-actions">
+                <button class="btn btn-secondary-outline btn-sm" onclick="playAlertSound('${escapeHtml(alert.severity)}')">Son</button>
+                ${acknowledgeAction}
+            </div>
+        </article>
+    `;
+}
+
+function insertIncomingAlert(alert) {
+    if (!alert?.id || document.getElementById(`alert-${alert.id}`)) {
+        return;
+    }
+
+    const container = document.getElementById('alerts-list-container');
+    if (!container) {
+        return;
+    }
+
+    container.querySelector('.empty-state')?.remove();
+    container.insertAdjacentHTML('afterbegin', renderAlertCard(alert));
+    lastAlertId = Math.max(lastAlertId, Number(alert.id) || 0);
+
+    const note = document.getElementById('new-alert-notif');
+    if (note) {
+        note.textContent = `Nouvelle alerte reçue à ${alert.created_at_label || 'l’instant'}.`;
+    }
+
+    playAlertSound(alert.severity || 'medium');
+    updateAlertCount();
+    window.refreshAlertBadges?.();
+}
+
 async function pollUnreadAlerts() {
     try {
-        const response = await fetch('/alerts/unread');
+        const response = await fetch(`/alerts/unread?after_id=${lastAlertId}`);
         const data = await response.json();
 
         const note = document.getElementById('new-alert-notif');
@@ -374,9 +461,9 @@ async function pollUnreadAlerts() {
             return;
         }
 
-        if (data.count > 0 && data.alerts[0]?.id > lastAlertId) {
-            lastAlertId = data.alerts[0].id;
-            note.innerHTML = `${data.count} nouvelle(s) alerte(s) détectée(s). <a href="/alerts">Actualiser</a>`;
+        if (data.alerts.length > 0) {
+            data.alerts
+                .forEach(insertIncomingAlert);
         } else {
             note.textContent = 'Aucune nouvelle alerte depuis le chargement.';
         }
@@ -385,6 +472,6 @@ async function pollUnreadAlerts() {
     }
 }
 
-setInterval(pollUnreadAlerts, 8000);
+setInterval(pollUnreadAlerts, 2000);
 </script>
 @endpush

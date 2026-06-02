@@ -75,7 +75,7 @@ class SecurityHardeningTest extends TestCase
                 'code' => $code,
             ]);
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('intranet.index'));
 
         $cookies = $response->headers->getCookies();
         $accessTokenCookie = collect($cookies)->first(fn ($cookie) => $cookie->getName() === 'access_token');
@@ -119,7 +119,7 @@ class SecurityHardeningTest extends TestCase
                 'code' => $code,
             ]);
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('intranet.index'));
 
         $cookies = $response->headers->getCookies();
         $accessTokenCookie = collect($cookies)->first(fn ($cookie) => $cookie->getName() === 'access_token');

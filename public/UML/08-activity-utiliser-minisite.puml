@@ -1,0 +1,73 @@
+@startuml Activity-Utiliser-MiniSite-Metier
+skinparam shadowing false
+skinparam activityBorderColor black
+
+title Diagramme d'Activité - Utiliser le Mini-site Métier\n
+
+start
+:Utilisateur accès /intranet;
+
+if (Session valide?) then (non)
+    :Rediriger vers /login;
+    stop
+else (oui)
+    :Vérifier IP dans liste autorisée;
+    
+    if (IP autorisée?) then (non)
+        :Rejeter accès;
+        :Enregistrer tentative suspecte;
+        stop
+    else (oui)
+    endif
+endif
+
+:Affiche le portail mini-site;
+
+while (Utilisateur explore) is (oui)
+    :Utilisateur sélectionne action\n(consulter, créer, modifier);
+    
+    if (Action = consulter?) then (oui)
+        :Récupérer données depuis BD;
+        :Afficher données;
+    else if (Action = modifier?) then (oui)
+        :Affiche formulaire d'édition;
+        :Utilisateur saisit données;
+        
+        :Analyser contenu\n(pattern XSS, SQL injection);
+        
+        if (Contenu suspect?) then (oui)
+            :Enregistrer alerte de sécurité;
+            :Notifier Admin/SOC;
+            :Rejeter la modification;
+            :Afficher message de modération;
+        else (non)
+            :Valider données;
+            :Auditer action (timestamp, user, entity, change);
+            :Mettre à jour BD;
+            :Afficher confirmation utilisateur;
+        endif
+    else if (Action = créer?) then (oui)
+        :Affiche formulaire création;
+        :Utilisateur saisit info;
+        
+        :Valider données + détecter menaces;
+        
+        if (Données valides?) then (oui)
+            :Auditer création;
+            :Créer entrée en BD;
+            :Afficher succès;
+        else (non)
+            :Afficher erreurs;
+        endif
+    endif
+    
+    :Utilisateur peut continuer ou quitter;
+    
+endwhile (non)
+
+:Utilisateur clique "Déconnexion";
+:Révoquer session;
+:Afficher page déconnexion;
+stop
+
+@enduml

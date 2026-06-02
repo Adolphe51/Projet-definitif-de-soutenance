@@ -65,6 +65,11 @@ return [
             'max_attempts' => 3,
             'resend_delay_seconds' => 180,
             'pending_auth_ttl_minutes' => 10,
+            'debug_code' => [
+                // Active l'affichage temporaire du code OTP pour les démos sans vraie messagerie.
+                'enabled' => env('CYBERGUARD_AUTH_DEBUG_OTP_ENABLED', env('APP_ENV') === 'local'),
+                'toast_duration_ms' => (int) env('CYBERGUARD_AUTH_DEBUG_OTP_TOAST_DURATION_MS', 45000),
+            ],
         ],
         'sessions' => [
             'max_active' => 5,
@@ -91,6 +96,7 @@ return [
         // Périmètre volontairement resserré pour la soutenance
         'focused_rule_ids' => [
             'brute_force_ssh',
+            'http_recon_scan',
             'sql_injection',
             'xss_attempt',
         ],
@@ -98,8 +104,111 @@ return [
         // Types d'attaques surveillés
         'monitored_types' => [
             'Brute Force',
+            'Port Scan',
             'SQL Injection',
             'XSS',
+        ],
+
+        // Détection applicative de reconnaissance HTTP.
+        // Utile pour les scans qui atteignent réellement le service web.
+        'recon' => [
+            'window_minutes' => (int) env('CYBERGUARD_RECON_WINDOW_MINUTES', 3),
+            'cooldown_seconds' => (int) env('CYBERGUARD_RECON_COOLDOWN_SECONDS', 120),
+            'distinct_paths_threshold' => (int) env('CYBERGUARD_RECON_DISTINCT_PATHS_THRESHOLD', 4),
+            'not_found_threshold' => (int) env('CYBERGUARD_RECON_404_THRESHOLD', 3),
+            'sensitive_path_threshold' => (int) env('CYBERGUARD_RECON_SENSITIVE_PATH_THRESHOLD', 2),
+            'request_threshold' => (int) env('CYBERGUARD_RECON_REQUEST_THRESHOLD', 4),
+            'suspicious_user_agents' => [
+                'nmap',
+                'nse',
+                'masscan',
+                'zgrab',
+                'nikto',
+                'sqlmap',
+                'python-requests',
+                'go-http-client',
+                'curl',
+                'wget',
+            ],
+            'sensitive_paths' => [
+                '/.env',
+                '/.git',
+                '/admin',
+                '/backup',
+                '/cgi-bin',
+                '/config',
+                '/debug',
+                '/login',
+                '/manager/html',
+                '/phpinfo.php',
+                '/phpmyadmin',
+                '/server-status',
+                '/vendor/phpunit',
+                '/wp-admin',
+                '/wp-login.php',
+            ],
+        ],
+
+        // Ingestion de journaux d'acces web (nginx/apache/caddy en format combine/simple).
+        // Permet de faire remonter des tests reels qui laissent des traces HTTP.
+        'log_ingestion' => [
+            'enabled' => env('CYBERGUARD_WEB_LOG_INGESTION_ENABLED', false),
+            'access_log_path' => env('CYBERGUARD_WEB_ACCESS_LOG_PATH'),
+            'max_lines_per_run' => (int) env('CYBERGUARD_WEB_LOG_MAX_LINES_PER_RUN', 500),
+            'offset_ttl_hours' => (int) env('CYBERGUARD_WEB_LOG_OFFSET_TTL_HOURS', 24),
+            'cooldown_seconds' => (int) env('CYBERGUARD_WEB_LOG_COOLDOWN_SECONDS', 60),
+            'tool_signatures' => [
+                'gobuster' => ['gobuster'],
+                'nikto' => ['nikto'],
+                'ffuf' => ['ffuf', 'fuzz faster u fool'],
+                'sqlmap' => ['sqlmap'],
+                'burpsuite' => ['burp', 'burp suite'],
+                'metasploit' => ['metasploit'],
+                'nmap' => ['nmap', 'nse'],
+                'dirbuster' => ['dirbuster'],
+                'wfuzz' => ['wfuzz'],
+                'zgrab' => ['zgrab'],
+            ],
+            'sensitive_paths' => [
+                '/.env',
+                '/.git',
+                '/admin',
+                '/backup',
+                '/cgi-bin',
+                '/config',
+                '/debug',
+                '/manager/html',
+                '/phpinfo.php',
+                '/phpmyadmin',
+                '/server-status',
+                '/vendor/phpunit',
+                '/wp-admin',
+                '/wp-login.php',
+            ],
+            'sql_signatures' => [
+                ' union ',
+                ' union%20',
+                "' or '1'='1",
+                'information_schema',
+                'sleep(',
+                'benchmark(',
+                'select ',
+                'drop table',
+            ],
+            'xss_signatures' => [
+                '<script',
+                '%3cscript',
+                'javascript:',
+                'onerror=',
+                'onload=',
+                'alert(',
+            ],
+            'traversal_signatures' => [
+                '../',
+                '..%2f',
+                '%2e%2e%2f',
+                '..\\',
+            ],
         ],
 
         // Règles d'auto-blocage
@@ -129,6 +238,11 @@ return [
                     'window_minutes' => 10,
                     'block_minutes' => 30,
                 ],
+                'http_recon_scan' => [
+                    'threshold_count' => 2,
+                    'window_minutes' => 10,
+                    'block_minutes' => 30,
+                ],
                 'sql_injection' => [
                     'threshold_count' => 2,
                     'window_minutes' => 15,
@@ -143,6 +257,11 @@ return [
             'per_type' => [
                 'Brute Force' => [
                     'threshold_count' => 3,
+                    'window_minutes' => 10,
+                    'block_minutes' => 30,
+                ],
+                'Port Scan' => [
+                    'threshold_count' => 2,
                     'window_minutes' => 10,
                     'block_minutes' => 30,
                 ],

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Créer un message - Mini site')
+@section('title', 'Créer un message - Module de démonstration')
 @section('page-title', 'Créer un message')
 @section('page-subtitle', 'Rédaction d’un échange interne dans un espace sécurisé, utile pour démontrer la journalisation et la détection de contenu suspect.')
 

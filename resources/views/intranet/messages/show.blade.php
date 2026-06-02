@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Voir le message - Mini site')
+@section('title', 'Voir le message - Module de démonstration')
 @section('page-title', 'Détail du message')
 @section('page-subtitle', 'Lecture métier d’un message interne pour expliquer comment un contenu libre peut être audité puis signalé.')
 

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Modifier l\'usager - Mini site')
+@section('title', 'Modifier l\'usager - Module de démonstration')
 @section('page-title', 'Modifier un usager')
 @section('page-subtitle', 'Mise à jour d’une fiche métier dans un parcours qui conserve la trace des changements et de leur contexte.')
 

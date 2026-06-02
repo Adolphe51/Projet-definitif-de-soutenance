@@ -24,7 +24,6 @@ class User extends Authenticatable
         'password',
         'is_active',
         'email_verified_at',
-        'face_descriptor',
         'last_ip',
         'last_login',
         'login_attempts',

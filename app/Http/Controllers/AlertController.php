@@ -42,13 +42,31 @@ class AlertController extends Controller
         return view('alerts.index', compact('alerts', 'summary', 'recentAuditTrail'));
     }
 
-    public function unread(): JsonResponse
+    public function unread(Request $request): JsonResponse
     {
-        $alerts = Alert::where('acknowledged', false)
-            ->orderByDesc('created_at')
-            ->limit(10)
-            ->get();
-        return response()->json(['alerts' => $alerts, 'count' => $alerts->count()]);
+        $afterId = max((int) $request->query('after_id', 0), 0);
+
+        $baseQuery = Alert::query()->where('acknowledged', false);
+        $count = (clone $baseQuery)->count();
+
+        $alertsQuery = Alert::with(['attack.rule'])
+            ->where('acknowledged', false)
+            ->limit(10);
+
+        if ($afterId > 0) {
+            $alertsQuery
+                ->where('id', '>', $afterId)
+                ->orderBy('id');
+        } else {
+            $alertsQuery->orderByDesc('created_at');
+        }
+
+        $alerts = $alertsQuery->get();
+
+        return response()->json([
+            'alerts' => $alerts->map(fn (Alert $alert) => $this->formatAlertPayload($alert))->values(),
+            'count' => $count,
+        ]);
     }
 
     public function acknowledge(int $id): JsonResponse
@@ -77,32 +95,49 @@ class AlertController extends Controller
         ]);
     }
 
-    public function stream(Request $request)
+    public function stream(Request $request): JsonResponse
     {
-        // SSE endpoint pour les alertes temps réel
-        return response()->stream(function () {
-            $lastId = 0;
-            $iterations = 0;
-            while ($iterations < 30) {
-                $alerts = Alert::where('id', '>', $lastId)
-                    ->orderBy('id')
-                    ->limit(5)
-                    ->get();
-
-                foreach ($alerts as $alert) {
-                    echo "data: " . json_encode($alert) . "\n\n";
-                    $lastId = $alert->id;
-                }
-
-                ob_flush();
-                flush();
-                sleep(2);
-                $iterations++;
-            }
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
-            'X-Accel-Buffering' => 'no',
+        return response()->json([
+            'available' => false,
+            'message' => 'Flux SSE desactive pour privilegier la stabilite en environnement local.',
         ]);
+    }
+
+    private function formatAlertPayload(Alert $alert): array
+    {
+        $attack = $alert->attack;
+
+        $originLabel = match (true) {
+            $alert->type === 'simulation' => 'Simulation manuelle',
+            $alert->type === 'honeypot' => 'Honeypot secondaire',
+            $alert->type === 'attack' && $attack?->is_simulation => 'Attaque simulée',
+            $alert->type === 'attack' => 'Détection sécurité',
+            $alert->type === 'system' => 'Traitement SOC',
+            default => 'Événement sécurité',
+        };
+
+        return [
+            'id' => $alert->id,
+            'attack_id' => $alert->attack_id,
+            'title' => $alert->title,
+            'message' => $alert->message,
+            'severity' => $alert->severity,
+            'type' => $alert->type,
+            'origin_label' => $originLabel,
+            'acknowledged' => (bool) $alert->acknowledged,
+            'created_at' => $alert->created_at?->toISOString(),
+            'created_at_human' => $alert->created_at?->diffForHumans(),
+            'created_at_label' => $alert->created_at?->format('d/m/Y H:i'),
+            'attack_url' => $alert->attack_id ? route('attacks.show', $alert->attack_id) : null,
+            'attack' => $attack ? [
+                'id' => $attack->id,
+                'type' => $attack->type,
+                'severity' => $attack->severity,
+                'source_ip' => $attack->source_ip,
+                'target_ip' => $attack->target_ip,
+                'is_simulation' => (bool) $attack->is_simulation,
+                'rule_name' => $attack->rule?->name,
+            ] : null,
+        ];
     }
 }

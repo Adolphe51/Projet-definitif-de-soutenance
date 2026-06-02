@@ -1,4 +1,4 @@
-@startuml CyberGuardClassDiagramD
+@startuml CyberGuardClassDiagramG
 top to bottom direction
 title Diagramme de classes - CyberGuard
 skinparam shadowing false

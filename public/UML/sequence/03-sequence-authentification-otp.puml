@@ -1,0 +1,75 @@
+@startuml Sequence-Authentification-OTP
+skinparam shadowing false
+skinparam sequenceParticipantBorderColor black
+skinparam sequenceActorBorderColor black
+
+title Diagramme de Séquence - Authentification avec OTP\n
+
+actor "Utilisateur" as User
+participant "Interface\nWeb" as UI
+participant "Contrôleur\nAuthentification" as Controller
+participant "Service\nOTP" as OTPService
+participant "Base de\nDonnées" as DB
+participant "Service\nSession" as SessionService
+
+User -> UI: Accès à /login
+UI --> User: Affiche formulaire d'authentification
+
+User -> UI: Saisit email + mot de passe
+UI -> Controller: POST /auth/login (email, password)
+
+Controller -> DB: Cherche user par email
+DB --> Controller: User trouvé ou non
+
+alt User trouvé et mot de passe valide
+    Controller -> DB: Vérifier password_hash
+    DB --> Controller: Hash valide
+    
+    Controller -> OTPService: Générer OTP
+    OTPService -> OTPService: Code aléatoire (6 chiffres)
+    OTPService -> DB: Enregistrer OTP + expiration
+    DB --> OTPService: OTP sauvegardé
+    OTPService --> Controller: OTP généré
+    
+    Controller -> UI: 200 OK + "Vérifiez votre email"
+    UI --> User: Formulaire de saisie OTP
+    
+    User -> UI: Saisit OTP reçu
+    UI -> Controller: POST /auth/verify-otp (otp_code)
+    
+    Controller -> DB: Cherche OTP valide pour user
+    DB --> Controller: OTP trouvé et non expiré
+    
+    Controller -> DB: Vérifier OTP_code == otp_saisie
+    DB --> Controller: Codes correspondent
+    
+    Controller -> SessionService: Créer session sécurisée
+    SessionService -> DB: Enregistrer SecuritySession\n(user_id, token, ip, user_agent)
+    DB --> SessionService: Session créée
+    SessionService -> SessionService: Générer token JWT/CSRF
+    SessionService --> Controller: Token de session
+    
+    Controller -> DB: Mettre à jour last_login, last_ip
+    DB --> Controller: Mise à jour effectuée
+    
+    Controller -> UI: 200 OK + token + redirection
+    UI --> User: Affiche tableau de bord
+
+else Mot de passe invalide
+    Controller -> DB: Incrémenter login_attempts
+    DB --> Controller: login_attempts = N
+    
+    opt N >= 5
+        Controller -> DB: Verrouiller compte temporairement
+        DB --> Controller: Compte verrouillé
+    end
+    
+    Controller -> UI: 401 Unauthorized
+    UI --> User: "Identifiants invalides"
+
+else Email non trouvé
+    Controller -> UI: 404 Not Found
+    UI --> User: "Email non enregistré"
+end
+
+@enduml
